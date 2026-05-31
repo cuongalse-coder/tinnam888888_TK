@@ -258,6 +258,7 @@ def main():
     if uploaded_files:
         st.divider()
         progress_bar = st.progress(0, text="Đang xử lý...")
+        new_files_processed = False
         for idx, file in enumerate(uploaded_files):
             existing = [d for d in st.session_state.documents if d.get('file_name') == file.name]
             if existing:
@@ -283,8 +284,11 @@ def main():
                     'upload_date': datetime.now().isoformat(),
                 }
                 st.session_state.documents.append(doc)
+                new_files_processed = True
+                
         progress_bar.progress(1.0, text="✅ Hoàn tất!")
-        st.rerun()
+        if new_files_processed:
+            st.rerun()
 
     if st.session_state.documents:
         st.divider()
