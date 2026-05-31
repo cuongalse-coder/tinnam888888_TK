@@ -280,6 +280,10 @@ def main():
         # Xóa những file trong session state mà không còn trong file_uploader (người dùng đã bấm X)
         st.session_state.documents = [d for d in st.session_state.documents if d['file_name'] in current_file_names]
 
+    # Khắc phục bộ nhớ đệm cũ (nếu có): xóa các chứng từ có doc_type không hợp lệ (VD: bản cũ)
+    from utils.parser import DOCUMENT_TYPES
+    st.session_state.documents = [d for d in st.session_state.documents if d.get('doc_type') in DOCUMENT_TYPES]
+
     if uploaded_files:
         st.divider()
         progress_bar = st.progress(0, text="Đang xử lý...")
@@ -637,7 +641,7 @@ def _render_multi_comparison(multi_result, docs):
                     for field_key, field_data in doc.get("fields", {}).items():
                         raw_data.append({
                             "Chứng từ": doc["file_name"],
-                            "Loại chứng từ": doc["doc_type_name"],
+                            "Loại chứng từ": DOCUMENT_TYPES.get(doc.get("doc_type", ""), {}).get("name", "Không xác định"),
                             "Mã trường (Key)": field_key,
                             "Tên trường (Label)": field_data.get("label", ""),
                             "Giá trị": field_data.get("value", "")
