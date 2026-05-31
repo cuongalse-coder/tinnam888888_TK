@@ -595,12 +595,3 @@ def _render_multi_comparison(multi_result, docs):
                 st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
-# ============================================================
-# Router
-# ============================================================
-if "Tải lên" in page:
-    page_upload()
-elif "Chứng từ" in page:
-    page_documents()
-elif "So sánh" in page:
-    page_compare()
