@@ -668,8 +668,10 @@ def compare_ecus_centric(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 row["Trạng thái"] = "✅ Khớp"
             else:
                 row["Trạng thái"] = "❌ Sai lệch"
-                
-            results.append(row)
+        else:
+            row["Trạng thái"] = "➖ Trống"
+            
+        results.append(row)
             
     return results
 

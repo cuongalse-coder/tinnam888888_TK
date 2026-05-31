@@ -546,8 +546,10 @@ def _render_multi_comparison(multi_result, docs):
         val = str(val)
         if '✅' in val:
             return ['background-color: rgba(16,185,129,0.08)'] * len(row)
-        else:
+        elif '❌' in val:
             return ['background-color: rgba(239,68,68,0.08)'] * len(row)
+        else:
+            return [''] * len(row)
 
     display_data = []
     
