@@ -789,8 +789,10 @@ def _extract_value_near_keyword(
         (giá_trị, confidence)
     """
     escaped_kw = re.escape(keyword)
+    # Cải tiến: Dừng việc lấy dữ liệu khi gặp dấu tab, xuống dòng, hoặc 2 dấu cách liên tiếp.
+    # Điều này ngăn chặn việc biểu thức chính quy (regex) gom nhầm toàn bộ các cột khác trong bảng Excel.
     pattern = re.compile(
-        rf"(?:{escaped_kw})[:\s\t]+([^\n]{{1,200}})",
+        rf"(?:{escaped_kw})[.:\-\s\t]+([^\t\n]{{1,150}}?)(?=\t|\n|\s{{2,}}|$)",
         re.IGNORECASE,
     )
     match = pattern.search(text)
