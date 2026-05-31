@@ -358,49 +358,6 @@ def main():
             st.info("👆 Hãy tải thêm ít nhất 1 chứng từ nữa để hệ thống tự động chạy bảng so sánh chéo nhé.")
 
 
-def _render_multi_comparison(multi_result, docs):
-    """Render comparison result for 3+ documents."""
-    st.divider()
-    st.subheader("📊 Kết quả So sánh Nhiều Chứng từ")
-
-    # Pair results
-    pair_results = multi_result.get('pair_results', [])
-
-    for pair_result in pair_results:
-        doc1_name = pair_result.get('doc1_name', '')
-        doc2_name = pair_result.get('doc2_name', '')
-        summary = pair_result.get('summary', {})
-        match_rate = summary.get('match_rate', 0)
-
-        with st.expander(f"⚖️ {doc1_name} ↔ {doc2_name} — Tỷ lệ khớp: {match_rate:.0%}", expanded=False):
-            _render_comparison_result(pair_result)
-
-    # Aggregate view
-    aggregate = multi_result.get('aggregate', [])
-    if aggregate:
-        st.divider()
-        st.subheader("📌 Tổng hợp tất cả chứng từ")
-
-        agg_data = []
-        for item in aggregate:
-            row = {'Trường': item.get('label', '')}
-            for doc in docs:
-                val = item.get('values', {}).get(doc['id'], '—')
-                row[doc['file_name'][:20]] = str(val) if val else '—'
-            row['Tất cả khớp?'] = '✅' if item.get('all_match') else '❌'
-            agg_data.append(row)
-
-        if agg_data:
-            agg_df = pd.DataFrame(agg_data)
-            
-            def highlight_agg(row):
-                if row.get('Tất cả khớp?', '') == '✅':
-                    return ['background-color: rgba(16,185,129,0.08)'] * len(row)
-                else:
-                    return ['background-color: rgba(239,68,68,0.08)'] * len(row)
-            
-            styled_df = agg_df.style.apply(highlight_agg, axis=1)
-            st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
 def _render_ai_analyzer_section(result, is_multiple, docs):
@@ -473,6 +430,9 @@ def _render_comparison_result(result):
         # Apply styling
         def highlight_status(row):
             status = row.get('Trạng thái', '')
+            if isinstance(status, pd.Series):
+                status = status.iloc[0] if not status.empty else ''
+            status = str(status)
             if 'Khớp' in status:
                 return ['background-color: rgba(16,185,129,0.08)'] * len(row)
             elif 'Sai lệch' in status:
@@ -579,7 +539,11 @@ def _render_multi_comparison(multi_result, docs):
             rendered_labels = set()
             
             def highlight_match(row):
-                if row.get('Tất cả khớp?') == '✅':
+                val = row.get('Tất cả khớp?', '')
+                if isinstance(val, pd.Series):
+                    val = val.iloc[0] if not val.empty else ''
+                val = str(val)
+                if val == '✅':
                     return ['background-color: rgba(16,185,129,0.08)'] * len(row)
                 else:
                     return ['background-color: rgba(239,68,68,0.08)'] * len(row)
