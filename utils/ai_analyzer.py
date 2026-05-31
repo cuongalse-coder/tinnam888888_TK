@@ -24,24 +24,47 @@ def analyze_discrepancies(result: dict, is_multiple: bool, api_key: str, docs: l
 
     issues_text = "\n".join(issues)
     
-    prompt = f"""Bạn là một Trưởng phòng Xuất Nhập Khẩu/Hải quan dày dặn kinh nghiệm.
+    prompt = f"""Bạn là một Trưởng phòng Xuất Nhập Khẩu/Hải quan (Import-Export Manager) dày dặn kinh nghiệm, vô cùng tỉ mỉ và khắt khe.
 Hệ thống phần mềm soi chéo chứng từ vừa phát hiện các lỗi sai lệch dữ liệu sau đây:
 
 {issues_text}
 
 Nhiệm vụ của bạn:
-1. Đánh giá nhanh mức độ nghiêm trọng của những lỗi này.
-2. Chỉ ra rủi ro nghiệp vụ hải quan, logistics hoặc thanh toán nếu để nguyên (VD: bị phạt tiền, rớt luồng đỏ, hải quan bác bỏ C/O, ngân hàng từ chối L/C...).
-3. Đề xuất hành động khắc phục cụ thể, rõ ràng cho nhân viên chứng từ (VD: Yêu cầu sửa chứng từ nào, theo chứng từ gốc nào...).
+1. Đánh giá nhanh mức độ nghiêm trọng của những lỗi này (Cao/Trung bình/Thấp).
+2. Phân tích chi tiết rủi ro nghiệp vụ hải quan, logistics hoặc thanh toán nếu để nguyên các sai lệch này (VD: bị phạt tiền, rớt luồng đỏ, hải quan bác bỏ C/O, ngân hàng từ chối thanh toán L/C...).
+3. Đề xuất hành động khắc phục cụ thể, dứt khoát cho nhân viên chứng từ (CUS). (VD: Yêu cầu hãng tàu tu chỉnh B/L, hay yêu cầu Shipper sửa Invoice, theo chứng từ gốc nào).
 
-Trả lời bằng tiếng Việt, chuyên nghiệp, ngắn gọn, súc tích (dùng bullet points), format markdown có sử dụng emoji phù hợp để làm nổi bật cảnh báo.
+Vui lòng trình bày kết quả NGẮN GỌN, CHUYÊN NGHIỆP theo cấu trúc sau:
+### 🔴 Mức độ Rủi ro Tổng quan: [Cao/Trung bình/Thấp]
+
+### 🔍 Chi tiết Phân tích Rủi ro
+- **[Tên trường bị sai lệch]**: [Phân tích hậu quả nếu không sửa]
+(Liệt kê cho từng lỗi)
+
+### 💡 Hành động Khắc phục (Dành cho CUS)
+- [Cần liên hệ ai, sửa giấy tờ gì, dựa trên giấy tờ gốc nào]
 """
     try:
+        import streamlit as st
+        import time
+        
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        return response.text
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=prompt,
+                )
+                return response.text
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str and attempt < max_retries - 1:
+                    delay = 15
+                    st.warning(f"⏳ Trợ lý AI đang bận hoặc quá tải (Lỗi 429 từ Google). Tự động thử lại sau {delay} giây (Lần {attempt + 1}/{max_retries - 1})... Vui lòng chờ!")
+                    time.sleep(delay)
+                    continue
+                return f"❌ Lỗi khi kết nối với AI: {error_str}"
     except Exception as e:
-        return f"❌ Lỗi khi kết nối với AI: {str(e)}"
+        return f"❌ Lỗi hệ thống: {str(e)}"
