@@ -374,7 +374,16 @@ def main():
                     df = pd.DataFrame(field_data)
                     st.dataframe(df, use_container_width=True, hide_index=True)
                 else:
-                    st.info("Không trích xuất được trường nào. Hãy thử đổi loại chứng từ.")
+                    st.warning("⚠️ Không trích xuất được trường nào từ file này. Kiểm tra nội dung thô bên dưới.")
+                
+                # Debug: hiển thị raw_text để chẩn đoán
+                with st.expander("🔍 Debug: Xem nội dung thô đã đọc từ file", expanded=False):
+                    raw = doc.get('raw_text', '')
+                    if raw:
+                        st.text_area("Raw Text (500 ký tự đầu):", value=raw[:500], height=200, key=f"raw_{doc['id']}")
+                        st.caption(f"Tổng độ dài raw_text: {len(raw)} ký tự | doc_type: `{doc['doc_type']}`")
+                    else:
+                        st.error("❌ raw_text hoàn toàn trống! File có thể bị lỗi hoặc không đọc được.")
 
         if len(st.session_state.documents) >= 2:
             st.markdown("<br><br>", unsafe_allow_html=True)

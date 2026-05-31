@@ -688,23 +688,56 @@ def _extract_value_near_keyword(
 ) -> tuple[str | None, float]:
     """Tìm giá trị gần keyword trong văn bản.
 
+    Thử nhiều chiến lược regex:
+    1. keyword[separator]value (cùng dòng, cách bởi : - tab space)
+    2. keyword\tvalue (tab-separated — phổ biến trong Excel)
+    3. keyword\nvalue (xuống dòng — phổ biến trong PDF)
+
     Returns
     -------
     tuple[str | None, float]
         (giá_trị, confidence)
     """
     escaped_kw = re.escape(keyword)
-    # Cải tiến: Dừng việc lấy dữ liệu khi gặp dấu tab, xuống dòng, hoặc 2 dấu cách liên tiếp.
-    # Điều này ngăn chặn việc biểu thức chính quy (regex) gom nhầm toàn bộ các cột khác trong bảng Excel.
-    pattern = re.compile(
-        rf"(?:{escaped_kw})[.:\-\s\t]+([^\t\n]{{1,150}}?)(?=\t|\n|\s{{2,}}|$)",
-        re.IGNORECASE,
-    )
-    match = pattern.search(text)
-    if not match:
-        return None, 0.0
 
-    raw_value = match.group(1).strip()
+    # Chiến lược 1-4: Nhiều pattern khác nhau
+    _patterns = [
+        # keyword: value hoặc keyword - value
+        re.compile(
+            rf"(?:{escaped_kw})\s*[.:\-]+\s*([^\t\n]{{1,200}}?)(?=\t|\n|\s{{2,}}|$)",
+            re.IGNORECASE,
+        ),
+        # keyword\tvalue (tab-separated)
+        re.compile(
+            rf"(?:{escaped_kw})\t+([^\t\n]{{1,200}})",
+            re.IGNORECASE,
+        ),
+        # keyword    value (nhiều dấu cách)
+        re.compile(
+            rf"(?:{escaped_kw})\s{{2,}}([^\t\n]{{1,200}}?)(?=\t|\n|\s{{3,}}|$)",
+            re.IGNORECASE,
+        ),
+        # keyword\nvalue (xuống dòng)
+        re.compile(
+            rf"(?:{escaped_kw})\s*\n\s*([^\n]{{1,200}})",
+            re.IGNORECASE,
+        ),
+        # keyword có 1 space rồi value (ít ưu tiên nhất)
+        re.compile(
+            rf"(?:{escaped_kw})\s+([^\t\n]{{1,200}}?)(?=\t|\n|\s{{2,}}|$)",
+            re.IGNORECASE,
+        ),
+    ]
+
+    raw_value = None
+    for pat in _patterns:
+        match = pat.search(text)
+        if match:
+            candidate = match.group(1).strip()
+            if candidate and len(candidate) > 0:
+                raw_value = candidate
+                break
+
     if not raw_value:
         return None, 0.0
 
@@ -713,16 +746,21 @@ def _extract_value_near_keyword(
         inco_match = re.search(r'\b(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)\b', raw_value, re.IGNORECASE)
         if inco_match:
             return inco_match.group(1).upper(), 0.95
+        inco_match = re.search(r'\b(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)\b', text, re.IGNORECASE)
+        if inco_match:
+            return inco_match.group(1).upper(), 0.70
         return None, 0.0
 
     if field_key == "paymentMethod":
         pay_match = re.search(r'\b(T/T|L/C|D/P|D/A|CAD|CASH|TELEGRAPHIC TRANSFER|LETTER OF CREDIT)\b', raw_value, re.IGNORECASE)
         if pay_match:
             return pay_match.group(1).upper(), 0.95
+        pay_match = re.search(r'\b(T/T|L/C|D/P|D/A|CAD|CASH|TELEGRAPHIC TRANSFER|LETTER OF CREDIT)\b', text, re.IGNORECASE)
+        if pay_match:
+            return pay_match.group(1).upper(), 0.70
         return None, 0.0
 
     if field_key == "hsCode":
-        # Mã HS có thể dạng 1234.56.78 hoặc 12345678
         hs_match = re.search(r'\b\d{4}[.\s]?\d{2}[.\s]?\d{2,4}\b', raw_value)
         if hs_match:
             return re.sub(r'[.\s]', '', hs_match.group()), 0.95
@@ -746,9 +784,9 @@ def _extract_value_near_keyword(
 
     # string – trả về nguyên giá trị (cắt bớt nếu quá dài)
     value = raw_value[:200].strip()
-    # Loại bỏ ký tự thừa cuối (dấu hai chấm, tab, …)
     value = re.sub(r"[\t:]+$", "", value).strip()
     return value, 0.80
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════
