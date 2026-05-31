@@ -14,10 +14,13 @@ Sử dụng ``rapidfuzz`` cho so khớp mờ và ``re`` cho trích xuất mẫu.
 from __future__ import annotations
 
 import re
+import json
 from datetime import datetime
 from typing import Any
 
 from rapidfuzz import fuzz
+from google import genai
+from pydantic import BaseModel
 
 # ═══════════════════════════════════════════════════════════════════════════
 # DOCUMENT_TYPES – Định nghĩa 6 loại chứng từ
@@ -774,6 +777,103 @@ def parse_fields(
             }
 
     return results
+
+
+def ai_parse_fields(
+    raw_text: str,
+    doc_type: str,
+    api_key: str,
+) -> dict[str, dict[str, Any]]:
+    """Trích xuất giá trị các trường bằng AI siêu thông minh (Google Gemini).
+
+    Nếu không có API key hoặc gọi AI thất bại, hệ thống tự động fallback
+    về hàm `parse_fields` thông thường.
+
+    Parameters
+    ----------
+    raw_text : str
+        Nội dung văn bản thô.
+    doc_type : str
+        Mã loại chứng từ (key trong ``DOCUMENT_TYPES``).
+    api_key : str
+        Google Gemini API Key.
+
+    Returns
+    -------
+    dict
+        ``{field_key: {'value': str, 'confidence': float, 'label': str}}``.
+    """
+    if not api_key:
+        return parse_fields(raw_text, doc_type)
+
+    if doc_type not in DOCUMENT_TYPES:
+        return {}
+
+    fields_def = DOCUMENT_TYPES[doc_type]["fields"]
+    
+    # Tạo schema hướng dẫn AI
+    schema_hint = {}
+    for key, fdef in fields_def.items():
+        schema_hint[key] = f"{fdef['label']} (type: {fdef['type']})"
+        
+    prompt = f"""Bạn là một AI siêu thông minh chuyên đọc hiểu chứng từ xuất nhập khẩu.
+Nhiệm vụ: Phân tích văn bản OCR lộn xộn dưới đây và trích xuất thông tin theo định dạng JSON.
+
+LOẠI CHỨNG TỪ: {DOCUMENT_TYPES[doc_type]['name']}
+CÁC TRƯỜNG CẦN TÌM:
+{json.dumps(schema_hint, ensure_ascii=False, indent=2)}
+
+LƯU Ý:
+1. Trường number (số lượng, trị giá, trọng lượng): Trả về con số thực (không có dấu phẩy ngăn cách hàng nghìn).
+2. Trường date: Trả về chuẩn YYYY-MM-DD.
+3. Nếu hoàn toàn không thấy dữ liệu, trả về null.
+4. Chỉ output duy nhất một cục JSON hợp lệ, tuyệt đối không bình luận thêm.
+
+--- BẮT ĐẦU VĂN BẢN CHỨNG TỪ ---
+{raw_text[:12000]}
+--- KẾT THÚC VĂN BẢN CHỨNG TỪ ---
+"""
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        
+        resp_text = response.text.strip()
+        # Xóa markdown code block nếu AI sinh ra
+        if resp_text.startswith("```json"):
+            resp_text = resp_text[7:]
+        if resp_text.startswith("```"):
+            resp_text = resp_text[3:]
+        if resp_text.endswith("```"):
+            resp_text = resp_text[:-3]
+            
+        ai_data = json.loads(resp_text.strip())
+        
+        results: dict[str, dict[str, Any]] = {}
+        for field_key, field_def in fields_def.items():
+            val = ai_data.get(field_key)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                # Chuyển đổi an toàn
+                if field_def["type"] == "number":
+                    try:
+                        parsed_val = float(val)
+                    except ValueError:
+                        parsed_val = str(val)
+                else:
+                    parsed_val = str(val)
+
+                results[field_key] = {
+                    "value": parsed_val,
+                    "confidence": 0.99,  # AI độ tin cậy tuyệt đối
+                    "label": field_def["label"]
+                }
+        return results
+    except Exception as e:
+        print(f"Lỗi AI Parser: {e}. Đang dùng fallback...")
+        return parse_fields(raw_text, doc_type)
+
 
 
 def get_field_label(doc_type: str, field_key: str) -> str:

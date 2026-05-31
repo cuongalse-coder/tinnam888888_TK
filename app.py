@@ -12,7 +12,7 @@ from datetime import datetime
 
 # Import utility modules
 from utils.extractors import extract_file
-from utils.parser import detect_document_type, parse_fields, DOCUMENT_TYPES, FIELD_MAPPING
+from utils.parser import detect_document_type, parse_fields, ai_parse_fields, DOCUMENT_TYPES, FIELD_MAPPING
 from utils.comparator import compare_documents, compare_multiple, results_to_dataframe, export_to_excel
 
 # ============================================================
@@ -203,6 +203,24 @@ with st.sidebar:
 
     st.divider()
 
+    st.markdown("🤖 **Cấu hình AI (Tùy chọn)**")
+    default_api_key = ""
+    try:
+        default_api_key = st.secrets.get("GEMINI_API_KEY", "")
+    except Exception:
+        pass
+        
+    api_key = st.text_input(
+        "Gemini API Key",
+        value=default_api_key,
+        type="password",
+        placeholder="Nhập API Key để trích xuất thông minh...",
+        help="Sử dụng Google Gemini AI để đọc chứng từ siêu chính xác thay cho Regex."
+    )
+    st.session_state.gemini_api_key = api_key
+
+    st.divider()
+
     # Doc count
     doc_count = len(st.session_state.documents)
     st.markdown(f"📄 **Chứng từ đã tải:** `{doc_count}`")
@@ -323,7 +341,8 @@ def page_upload():
                 detection = detect_document_type(raw_text)
 
                 # Parse fields
-                fields = parse_fields(raw_text, detection['type'])
+                api_key = st.session_state.get("gemini_api_key", "")
+                fields = ai_parse_fields(raw_text, detection['type'], api_key)
 
                 # Create document record
                 doc = {
@@ -381,7 +400,8 @@ def page_upload():
 
                     if new_type != doc['doc_type']:
                         doc['doc_type'] = new_type
-                        doc['fields'] = parse_fields(doc.get('raw_text', ''), new_type)
+                        api_key = st.session_state.get("gemini_api_key", "")
+                        doc['fields'] = ai_parse_fields(doc.get('raw_text', ''), new_type, api_key)
 
                 with col2:
                     # Shipment assignment
