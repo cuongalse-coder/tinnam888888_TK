@@ -287,8 +287,6 @@ def main():
                 new_files_processed = True
                 
         progress_bar.progress(1.0, text="✅ Hoàn tất!")
-        if new_files_processed:
-            st.rerun()
 
     if st.session_state.documents:
         st.divider()
