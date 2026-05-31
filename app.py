@@ -522,7 +522,7 @@ def _render_comparison_result(result, key_suffix=""):
 
 
 def _render_multi_comparison(multi_result, docs):
-    """Render comparison result based on ECUS standard fields."""
+    """Render comparison result based on ECUS standard fields, split into tabs."""
     from utils.comparator import compare_ecus_centric
     
     st.divider()
@@ -549,10 +549,8 @@ def _render_multi_comparison(multi_result, docs):
         else:
             return ['background-color: rgba(239,68,68,0.08)'] * len(row)
 
-    # Đổi tên cột từ doc_id sang file_name
     display_data = []
     
-    # Tạo map doc_id -> column_name (bao gồm icon để dễ nhìn)
     from utils.parser import DOCUMENT_TYPES
     col_map = {}
     for doc in docs:
@@ -568,18 +566,59 @@ def _render_multi_comparison(multi_result, docs):
         display_data.append(display_row)
 
     df = pd.DataFrame(display_data)
-    styled_df = df.style.apply(highlight_match, axis=1)
     
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    TAB_GROUPS = {
+        "Thông tin chung": [
+            "Số tờ khai", "Ngày đăng ký", "Người xuất khẩu", "Người nhập khẩu", 
+            "Mã loại hình", "Cơ quan Hải quan", "Số Vận đơn (B/L)", 
+            "Tên tàu / Phương tiện VC", "Cảng xếp hàng (POL)", "Cảng dỡ hàng (POD)", 
+            "Số lượng kiện", "Tổng trọng lượng", "Địa điểm lưu kho"
+        ],
+        "Thông tin chung 2": [
+            "Số Hóa đơn (Invoice)", "Ngày Hóa đơn", "Trị giá hóa đơn", 
+            "Mã đồng tiền", "Phương thức thanh toán", "Điều kiện giao hàng"
+        ],
+        "Danh sách hàng": [
+            "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Lượng (Quantity)", "Đơn giá"
+        ]
+    }
+    
+    tabs = st.tabs(list(TAB_GROUPS.keys()))
+    
+    for idx, (tab_name, keywords) in enumerate(TAB_GROUPS.items()):
+        with tabs[idx]:
+            tab_df = df[df["Tiêu chí ECUS"].isin(keywords)]
+            if not tab_df.empty:
+                styled_df = tab_df.style.apply(highlight_match, axis=1)
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+            else:
+                st.info(f"Không có dữ liệu cho phần {tab_name}.")
+                
+    # Các trường không thuộc 3 nhóm trên (nếu có)
+    all_known_keys = [k for group in TAB_GROUPS.values() for k in group]
+    other_df = df[~df["Tiêu chí ECUS"].isin(all_known_keys)]
+    if not other_df.empty:
+        with st.expander("📌 Các thông tin khác", expanded=False):
+            styled_df = other_df.style.apply(highlight_match, axis=1)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
     
     # Export ECUS comparison
+    st.divider()
     col1, col2 = st.columns(2)
     with col1:
         try:
             from io import BytesIO
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name='ECUS_Compare')
+                # Xuất ra nhiều sheet tương ứng
+                for tab_name, keywords in TAB_GROUPS.items():
+                    tab_df = df[df["Tiêu chí ECUS"].isin(keywords)]
+                    if not tab_df.empty:
+                        safe_sheet_name = tab_name[:31]
+                        tab_df.to_excel(writer, index=False, sheet_name=safe_sheet_name)
+                if not other_df.empty:
+                    other_df.to_excel(writer, index=False, sheet_name="Khác")
+                    
             excel_bytes = output.getvalue()
             
             st.download_button(
@@ -603,6 +642,7 @@ def _render_multi_comparison(multi_result, docs):
             use_container_width=True,
             key="export_ecus_csv",
         )
+
 
 
 
