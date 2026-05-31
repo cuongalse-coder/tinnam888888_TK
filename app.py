@@ -295,7 +295,8 @@ def main():
                 continue
             progress_bar.progress((idx + 1) / len(uploaded_files), text=f"Đang xử lý: {file.name} ({idx + 1}/{len(uploaded_files)})")
             with st.spinner(f"⏳ Đang trích xuất: **{file.name}**..."):
-                result = extract_file(file, ocr_languages=ocr_langs)
+                api_key = st.session_state.get("gemini_api_key", "")
+                result = extract_file(file, ocr_languages=ocr_langs, api_key=api_key)
                 if result.get('error'):
                     st.error(f"❌ Lỗi khi xử lý **{file.name}**: {result['error']}")
                     continue

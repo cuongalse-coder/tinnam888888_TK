@@ -1,10 +1,7 @@
 """
-OCR module: Trích xuất text từ PDF/ảnh scan bằng EasyOCR.
+OCR module: Trích xuất text từ PDF scan bằng Google Gemini Native OCR.
 
-Workflow:
-1. pdfplumber extract text → nếu text rỗng/quá ngắn
-2. Chuyển PDF page thành ảnh (dùng pdfplumber hoặc pdf2image)
-3. EasyOCR đọc ảnh → trả text
+Bỏ qua EasyOCR để tránh lỗi PyTorch nặng, dùng trực tiếp Gemini Vision.
 """
 import io
 import logging
@@ -12,39 +9,16 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Lazy-load EasyOCR reader (tải model 1 lần)
-_ocr_reader = None
 
-
-def _get_reader():
-    """Lazy init EasyOCR reader."""
-    global _ocr_reader
-    if _ocr_reader is None:
-        try:
-            import easyocr
-            logger.info("Đang khởi tạo EasyOCR reader (lần đầu sẽ tải model)...")
-            _ocr_reader = easyocr.Reader(
-                ['en'],  # Tiếng Anh đủ cho B/L (chứng từ quốc tế)
-                gpu=False,  # CPU mode cho tương thích
-                verbose=False,
-            )
-            logger.info("EasyOCR reader sẵn sàng.")
-        except ImportError:
-            logger.warning("EasyOCR chưa cài. Chạy: pip install easyocr")
-            return None
-        except Exception as e:
-            logger.error("Lỗi khởi tạo EasyOCR: %s", e)
-            return None
-    return _ocr_reader
-
-
-def ocr_pdf_page(page, dpi: int = 200) -> str:
-    """OCR một trang PDF (pdfplumber page object) → text.
+def ocr_pdf_page(page, api_key: str = "", dpi: int = 200) -> str:
+    """OCR một trang PDF (pdfplumber page object) dùng Gemini Vision.
     
     Parameters
     ----------
     page : pdfplumber.page.Page
         Trang PDF cần OCR.
+    api_key : str
+        API key Gemini.
     dpi : int
         Độ phân giải khi render ảnh (mặc định 200).
     
@@ -53,68 +27,48 @@ def ocr_pdf_page(page, dpi: int = 200) -> str:
     str
         Text trích xuất từ OCR, hoặc chuỗi rỗng nếu thất bại.
     """
-    reader = _get_reader()
-    if reader is None:
+    if not api_key:
+        logger.warning("Không có Gemini API Key để thực hiện OCR.")
         return ""
 
     try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+
         # Chuyển PDF page thành PIL Image
         img = page.to_image(resolution=dpi).original
 
-        # Chuyển sang bytes để EasyOCR đọc
-        img_bytes = io.BytesIO()
-        img.save(img_bytes, format='PNG')
-        img_bytes.seek(0)
-
-        # OCR
-        results = reader.readtext(img_bytes.getvalue(), detail=0, paragraph=True)
-        text = "\n".join(results)
+        prompt = "Extract all text from this image exactly as written. Return ONLY the raw text, no markdown formatting. If there is no text, return empty."
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[prompt, img],
+        )
+        
+        text = response.text.strip() if response.text else ""
         return text
 
     except Exception as e:
-        logger.error("OCR lỗi: %s", e)
+        logger.error("Gemini OCR lỗi: %s", e)
         return ""
 
 
-def ocr_image_file(image_path: str) -> str:
-    """OCR một file ảnh (PNG/JPG/TIFF) → text.
-    
-    Parameters
-    ----------
-    image_path : str
-        Đường dẫn tới file ảnh.
-    
-    Returns
-    -------
-    str
-        Text trích xuất từ OCR.
-    """
-    reader = _get_reader()
-    if reader is None:
-        return ""
-
-    try:
-        results = reader.readtext(image_path, detail=0, paragraph=True)
-        return "\n".join(results)
-    except Exception as e:
-        logger.error("OCR ảnh lỗi: %s", e)
-        return ""
-
-
-def extract_text_with_ocr_fallback(pdf_path: str, max_pages: int = 3) -> str:
+def extract_text_with_ocr_fallback(pdf_path: str, api_key: str = "", max_pages: int = 3) -> str:
     """Trích xuất text từ PDF, tự động fallback sang OCR nếu cần.
     
     Parameters
     ----------
     pdf_path : str
         Đường dẫn file PDF.
+    api_key : str
+        Gemini API Key
     max_pages : int
         Số trang tối đa cần xử lý.
     
     Returns
     -------
-    str
-        Text tổng hợp từ tất cả trang.
+    tuple(str, bool)
+        Text tổng hợp từ tất cả trang, và cờ báo có dùng OCR hay không.
     """
     import pdfplumber
 
@@ -124,17 +78,12 @@ def extract_text_with_ocr_fallback(pdf_path: str, max_pages: int = 3) -> str:
     try:
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages[:max_pages]):
-                # Thử pdfplumber trước
                 text = page.extract_text() or ""
-
-                # Nếu text quá ngắn (< 50 ký tự) → có thể là ảnh scan
                 if len(text.strip()) < 50:
-                    logger.info("Trang %d: text ngắn (%d chars), thử OCR...", i + 1, len(text.strip()))
-                    ocr_text = ocr_pdf_page(page)
+                    ocr_text = ocr_pdf_page(page, api_key)
                     if len(ocr_text.strip()) > len(text.strip()):
                         text = ocr_text
                         ocr_used = True
-                        logger.info("Trang %d: OCR thành công (%d chars)", i + 1, len(ocr_text.strip()))
 
                 all_text.append(text)
 
@@ -145,9 +94,5 @@ def extract_text_with_ocr_fallback(pdf_path: str, max_pages: int = 3) -> str:
 
 
 def is_ocr_available() -> bool:
-    """Kiểm tra EasyOCR có sẵn không."""
-    try:
-        import easyocr
-        return True
-    except ImportError:
-        return False
+    """Luôn True vì giờ dùng Gemini API thay vì thư viện local."""
+    return True

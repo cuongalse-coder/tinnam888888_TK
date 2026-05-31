@@ -157,16 +157,18 @@ def extract_excel(file: Any) -> dict[str, Any]:
 # PDF
 # ---------------------------------------------------------------------------
 
-def extract_pdf(file: Any) -> dict[str, Any]:
+def extract_pdf(file: Any, api_key: str = "") -> dict[str, Any]:
     """Trích xuất văn bản và bảng từ file PDF.
 
-    Tự động fallback sang EasyOCR nếu trang PDF là ảnh scan
+    Tự động fallback sang OCR (Gemini) nếu trang PDF là ảnh scan
     (text < 50 ký tự).
 
     Parameters
     ----------
     file : UploadedFile
         Đối tượng file PDF.
+    api_key : str
+        API key Gemini dùng để OCR ảnh scan.
 
     Returns
     -------
@@ -187,7 +189,7 @@ def extract_pdf(file: Any) -> dict[str, Any]:
                 if len(text.strip()) < 50:
                     try:
                         from utils.ocr import ocr_pdf_page
-                        ocr_text = ocr_pdf_page(page)
+                        ocr_text = ocr_pdf_page(page, api_key)
                         if len(ocr_text.strip()) > len(text.strip()):
                             text = ocr_text
                             ocr_used = True
@@ -345,6 +347,7 @@ _EXT_MAP: dict[str, str] = {
 def extract_file(
     file: Any,
     ocr_languages: list[str] | None = None,
+    api_key: str = "",
 ) -> dict[str, Any]:
     """Tự động nhận diện loại file và trích xuất nội dung.
 
@@ -377,7 +380,7 @@ def extract_file(
 
     extractors = {
         "excel": extract_excel,
-        "pdf": extract_pdf,
+        "pdf": lambda f: extract_pdf(f, api_key),
         "image": lambda f: extract_image(f, languages=ocr_languages),
         "word": extract_word,
     }
