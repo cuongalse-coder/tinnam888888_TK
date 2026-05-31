@@ -266,22 +266,22 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
         "fields": {
             "invoiceNo": {
                 "label": "Invoice No",
-                "keywords": ["invoice no", "inv no", "số hóa đơn", "invoice number"],
+                "keywords": ["invoice no", "inv no", "số hóa đơn", "invoice number", "số (no.)", "số:", "no."],
                 "type": "string",
             },
             "date": {
                 "label": "Ngày",
-                "keywords": ["date", "ngày", "invoice date"],
+                "keywords": ["date", "ngày", "invoice date", "ngày (date)"],
                 "type": "date",
             },
             "seller": {
                 "label": "Người bán",
-                "keywords": ["seller", "người bán", "exporter", "beneficiary"],
+                "keywords": ["seller", "người bán", "exporter", "beneficiary", "đơn vị bán hàng", "shipper"],
                 "type": "string",
             },
             "buyer": {
                 "label": "Người mua",
-                "keywords": ["buyer", "người mua", "importer", "applicant"],
+                "keywords": ["buyer", "người mua", "importer", "applicant", "tên đơn vị", "company's name", "purchaser"],
                 "type": "string",
             },
             "description": {
@@ -304,6 +304,7 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": [
                     "total amount", "total", "tổng",
                     "tổng giá trị", "amount",
+                    "tổng cộng tiền thanh toán", "payment total",
                 ],
                 "type": "number",
             },
@@ -700,8 +701,13 @@ def _extract_value_near_keyword(
     """
     escaped_kw = re.escape(keyword)
 
-    # Chiến lược 1-4: Nhiều pattern khác nhau
+    # Chiến lược 1-5: Nhiều pattern khác nhau
     _patterns = [
+        # keyword (English/note): value — phổ biến trong hóa đơn song ngữ VN
+        re.compile(
+            rf"(?:{escaped_kw})\s*\([^)]*\)\s*[.:\-]+\s*([^\t\n]{{1,200}}?)(?=\t|\n|\s{{2,}}|$)",
+            re.IGNORECASE,
+        ),
         # keyword: value hoặc keyword - value
         re.compile(
             rf"(?:{escaped_kw})\s*[.:\-]+\s*([^\t\n]{{1,200}}?)(?=\t|\n|\s{{2,}}|$)",
@@ -904,9 +910,10 @@ def parse_fields(
                 best_conf = 0.90
 
         # Thử từng keyword, giữ kết quả có confidence cao nhất
+        # Dùng >= để keyword cụ thể hơn (thường nằm cuối list) ghi đè keyword chung
         for kw in keywords:
             value, conf = _extract_value_near_keyword(raw_text, kw, field_type, field_key)
-            if value and conf > best_conf:
+            if value and conf >= best_conf:
                 best_value = value
                 best_conf = conf
 
