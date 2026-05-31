@@ -881,6 +881,10 @@ def parse_fields(
     if doc_type not in DOCUMENT_TYPES:
         return {}
 
+    # Tờ khai Hải quan cần parser chuyên biệt
+    if doc_type.startswith("customs_declaration"):
+        return _parse_customs_declaration(raw_text, doc_type)
+
     fields_def = DOCUMENT_TYPES[doc_type]["fields"]
     results: dict[str, dict[str, Any]] = {}
 
@@ -912,6 +916,202 @@ def parse_fields(
                 "confidence": round(best_conf, 2),
                 "label": label,
             }
+
+    return results
+
+
+
+def _parse_customs_declaration(
+    raw_text: str,
+    doc_type: str,
+) -> dict[str, dict[str, Any]]:
+    """Parser chuyên biệt cho Tờ khai Hải quan VNACCS/ECUS.
+    
+    Hỗ trợ cả Xuất khẩu (7X/EXP) và Nhập khẩu (7N/IMP).
+    """
+    results: dict[str, dict[str, Any]] = {}
+    fields_def = DOCUMENT_TYPES[doc_type]["fields"]
+
+    def _set(key: str, value: str, conf: float = 0.90):
+        if key in fields_def and value and value.strip() and value.strip() not in ('-', '/', '/ /', ''):
+            results[key] = {
+                "value": value.strip(),
+                "confidence": conf,
+                "label": fields_def[key]["label"],
+            }
+
+    # --- Số tờ khai ---
+    m = re.search(r'Số tờ khai\s+(\d{10,15})', raw_text)
+    if m:
+        _set("declarationNo", m.group(1))
+
+    # --- Ngày đăng ký ---
+    m = re.search(r'Ngày đăng ký\s+(\d{1,2}/\d{1,2}/\d{4})', raw_text)
+    if m:
+        parsed = _parse_date(m.group(1))
+        _set("date", parsed or m.group(1))
+
+    # --- Mã loại hình ---
+    m = re.search(r'Mã loại hình\s+(\w+\d*\s*\d*)', raw_text)
+    if m:
+        _set("typeCode", m.group(1).strip())
+
+    # --- Cơ quan Hải quan ---
+    m = re.search(r'Tên cơ quan Hải quan tiếp nhận tờ khai\s+(\S+)', raw_text)
+    if m:
+        _set("customsBranch", m.group(1))
+
+    # --- Người xuất khẩu (section-based) ---
+    m = re.search(r'Người xuất khẩu\s*\n.*?Tên\s+(.+?)(?:\n|Mã bưu chính)', raw_text, re.DOTALL)
+    if m:
+        _set("exporter", m.group(1).strip())
+    else:
+        m = re.search(r'Người xuất khẩu.*?Tên\t+(.+?)(?:\t|\n)', raw_text, re.DOTALL)
+        if m:
+            _set("exporter", m.group(1).strip())
+
+    # --- Người nhập khẩu (section-based) ---
+    m = re.search(r'Người nhập khẩu\s*\n.*?Tên\s+(.+?)(?:\n|Mã bưu chính)', raw_text, re.DOTALL)
+    if m:
+        _set("importer", m.group(1).strip())
+    else:
+        m = re.search(r'Người nhập khẩu.*?Tên\t+(.+?)(?:\t|\n)', raw_text, re.DOTALL)
+        if m:
+            _set("importer", m.group(1).strip())
+
+    # --- Số vận đơn ---
+    # Xuất: "Số vận đơn 122300021408750"
+    # Nhập: "Số vận đơn  Địa điểm lưu kho...\n1 KA0719010473"
+    m = re.search(r'Số vận đơn\s+(\d[\w.-]+)', raw_text)
+    if m:
+        _set("blNo", m.group(1))
+    else:
+        m = re.search(r'Số vận đơn.*?\n\s*\d+\.?\s+(\S+)', raw_text, re.DOTALL)
+        if m:
+            _set("blNo", m.group(1))
+
+    # --- Phương tiện vận chuyển ---
+    m = re.search(r'Phương tiện vận chuyển(?:\s+dự kiến)?\s*\n?\s*(.+?)(?:\n|$)', raw_text)
+    if m and m.group(1).strip() and m.group(1).strip() not in ('dự kiến', ''):
+        _set("vessel", m.group(1).strip())
+    else:
+        # Import: vessel ở dòng con (VN0662/25JAN)
+        m = re.search(r'Phương tiện vận chuyển.*?\n.*?(\w{2}\d{3,4}/\d{1,2}\w{3})', raw_text, re.DOTALL)
+        if m:
+            _set("vessel", m.group(1))
+
+    # --- Cảng xếp hàng (POL) ---
+    m = re.search(r'Địa điểm xếp hàng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        _set("pol", f"{m.group(1)} {m.group(2).strip()}")
+    else:
+        m = re.search(r'Địa điểm xếp hàng\s+(.+?)(?:\n|$)', raw_text)
+        if m:
+            _set("pol", m.group(1).strip())
+
+    # --- Cảng dỡ hàng (POD) ---
+    # Xuất: "Địa điểm nhận hàng cuối cùng VNFBT SAMSUNG"
+    # Nhập: "Địa điểm dỡ hàng VNHAN HA NOI"
+    m = re.search(r'Địa điểm nhận hàng cuối cùng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        _set("pod", f"{m.group(1)} {m.group(2).strip()}")
+    else:
+        m = re.search(r'Địa điểm dỡ hàng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+        if m:
+            _set("pod", f"{m.group(1)} {m.group(2).strip()}")
+        else:
+            m = re.search(r'Địa điểm nhận hàng cuối cùng\s+(.+?)(?:\n|$)', raw_text)
+            if m:
+                _set("pod", m.group(1).strip())
+
+    # --- Số lượng kiện ---
+    m = re.search(r'Số lượng\s+([\d.,]+)\s*(\w+)?', raw_text)
+    if m:
+        parsed = _parse_number(m.group(1))
+        if parsed is not None:
+            _set("packages", str(parsed))
+
+    # --- Tổng trọng lượng ---
+    m = re.search(r'Tổng trọng lượng hàng\s*\(Gross\)\s+([\d.,]+)', raw_text)
+    if m:
+        parsed = _parse_number(m.group(1))
+        if parsed is not None:
+            _set("grossWeight", str(parsed))
+
+    # --- Địa điểm lưu kho ---
+    m = re.search(r'Địa điểm lưu kho\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        _set("locationOfStorage", f"{m.group(1)} {m.group(2).strip()}")
+
+    # --- Số hóa đơn ---
+    m = re.search(r'Số hóa đơn\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        val = m.group(1).strip()
+        val = re.sub(r'^[A-Z]\s*-\s*', '', val).strip()
+        if val:
+            _set("invoiceNo", val)
+
+    # --- Ngày phát hành hóa đơn ---
+    m = re.search(r'Ngày phát hành\s+(\d{1,2}/\d{1,2}/\d{4})', raw_text)
+    if m:
+        parsed = _parse_date(m.group(1))
+        _set("invoiceDate", parsed or m.group(1))
+
+    # --- Tổng trị giá hóa đơn ---
+    m = re.search(r'Tổng trị giá hóa đơn\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        val = m.group(1).strip()
+        nums = re.findall(r'[\d.,]+', val)
+        for n in nums:
+            parsed = _parse_number(n)
+            if parsed is not None and parsed > 0:
+                _set("value", str(parsed))
+                break
+        curr_match = re.search(r'\b(USD|EUR|JPY|CNY|KRW|VND|GBP|SGD|THB|TWD)\b', val)
+        if curr_match:
+            _set("currency", curr_match.group(1))
+
+    # --- Điều kiện giao hàng (Incoterm) ---
+    m = re.search(r'Tổng trị giá hóa đơn\s+\w?\s*-?\s*(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)', raw_text, re.IGNORECASE)
+    if m:
+        _set("incoterm", m.group(1).upper())
+
+    # --- Phương thức thanh toán ---
+    m = re.search(r'Phương thức thanh toán\s+(\w+)', raw_text)
+    if m:
+        _set("paymentMethod", m.group(1).strip())
+    else:
+        m = re.search(r'PHUONG THUC THANH TOAN[:\s]+(\w+)', raw_text, re.IGNORECASE)
+        if m:
+            _set("paymentMethod", m.group(1).strip())
+
+    # --- Mã số hàng hóa (HS Code) ---
+    hs_matches = re.findall(r'\b(\d{4}\.\d{2}\.\d{2})\b', raw_text)
+    if hs_matches:
+        _set("hsCode", hs_matches[0].replace('.', ''))
+
+    # --- Mô tả hàng hóa ---
+    m = re.search(r'Tên hàng\s+(.+?)(?:\n|$)', raw_text)
+    if m:
+        _set("description", m.group(1).strip()[:200])
+    else:
+        m = re.search(r'Phần ghi chú\s+(.+?)(?:\n|$)', raw_text)
+        if m:
+            _set("description", m.group(1).strip()[:200])
+
+    # --- Lượng (Quantity) ---
+    qty_matches = re.findall(r'Lượng\s+([\d.,]+)', raw_text)
+    if qty_matches:
+        parsed = _parse_number(qty_matches[0])
+        if parsed is not None:
+            _set("quantity", str(parsed))
+
+    # --- Đơn giá ---
+    up_matches = re.findall(r'Đơn giá nguyên tệ\s+([\d.,]+)', raw_text)
+    if up_matches:
+        parsed = _parse_number(up_matches[0])
+        if parsed is not None:
+            _set("unitPrice", str(parsed))
 
     return results
 
