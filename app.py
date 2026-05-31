@@ -714,6 +714,14 @@ def _render_comparison_result(result):
     results = result.get('results', [])
     if results:
         df = results_to_dataframe(result)
+        
+        GROUPS = {
+            "🚢 Nhóm Thông tin Vận tải": ["Tàu", "Chuyến", "Cảng xếp (POL)", "Cảng dỡ (POD)", "B/L No", "Số Vận đơn (B/L)", "Số container", "Số seal", "Loại container", "Ngày On Board"],
+            "🏢 Nhóm Thông tin Đối tác": ["Người xuất khẩu", "Người nhập khẩu", "Shipper", "Consignee", "Notify Party", "Người bán", "Người mua", "Bên được thông báo"],
+            "📦 Nhóm Thông tin Hàng hóa": ["Mô tả hàng hóa", "Số lượng", "Trọng lượng", "Trọng lượng tịnh (N/W)", "Trọng lượng cả bì (G/W)", "Thể tích (CBM)", "Thể tích", "Số kiện", "Mã HS", "Đơn vị", "Đơn giá", "Xuất xứ"],
+            "💰 Nhóm Tài chính & Hợp đồng": ["Trị giá", "Tổng giá trị", "Loại tiền", "Điều kiện giao hàng", "Điều kiện cước", "Số Hợp đồng", "Ngày Hợp đồng", "Phương thức thanh toán", "Tổng tiền thuế", "Số Invoice", "Invoice No", "Cước phí", "Số C/O"],
+            "📅 Nhóm Thông tin Chung": ["Số tờ khai", "Ngày đăng ký", "Ngày phát hành", "Ngày", "ETD", "ETA", "Mã loại hình", "Cơ quan Hải quan", "Phương thức vận chuyển", "P/L No", "Booking No"]
+        }
 
         # Apply styling
         def highlight_status(row):
@@ -726,8 +734,22 @@ def _render_comparison_result(result):
                 return ['background-color: rgba(245,158,11,0.08)'] * len(row)
             return [''] * len(row)
 
-        styled_df = df.style.apply(highlight_status, axis=1)
-        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+        rendered_labels = set()
+        
+        for group_name, keywords in GROUPS.items():
+            group_df = df[df['Trường'].isin(keywords)]
+            if not group_df.empty:
+                st.markdown(f"#### {group_name}")
+                styled_df = group_df.style.apply(highlight_status, axis=1)
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                rendered_labels.update(group_df['Trường'].tolist())
+                
+        # Other remaining fields
+        other_df = df[~df['Trường'].isin(rendered_labels)]
+        if not other_df.empty:
+            st.markdown("#### 📌 Thông tin Khác")
+            styled_df = other_df.style.apply(highlight_status, axis=1)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
         # Export buttons
         col1, col2 = st.columns(2)
@@ -798,7 +820,36 @@ def _render_multi_comparison(multi_result, docs):
 
         if agg_data:
             agg_df = pd.DataFrame(agg_data)
-            st.dataframe(agg_df, use_container_width=True, hide_index=True)
+            
+            GROUPS = {
+                "🚢 Nhóm Thông tin Vận tải": ["Tàu", "Chuyến", "Cảng xếp (POL)", "Cảng dỡ (POD)", "B/L No", "Số Vận đơn (B/L)", "Số container", "Số seal", "Loại container", "Ngày On Board"],
+                "🏢 Nhóm Thông tin Đối tác": ["Người xuất khẩu", "Người nhập khẩu", "Shipper", "Consignee", "Notify Party", "Người bán", "Người mua", "Bên được thông báo"],
+                "📦 Nhóm Thông tin Hàng hóa": ["Mô tả hàng hóa", "Số lượng", "Trọng lượng", "Trọng lượng tịnh (N/W)", "Trọng lượng cả bì (G/W)", "Thể tích (CBM)", "Thể tích", "Số kiện", "Mã HS", "Đơn vị", "Đơn giá", "Xuất xứ"],
+                "💰 Nhóm Tài chính & Hợp đồng": ["Trị giá", "Tổng giá trị", "Loại tiền", "Điều kiện giao hàng", "Điều kiện cước", "Số Hợp đồng", "Ngày Hợp đồng", "Phương thức thanh toán", "Tổng tiền thuế", "Số Invoice", "Invoice No", "Cước phí", "Số C/O"],
+                "📅 Nhóm Thông tin Chung": ["Số tờ khai", "Ngày đăng ký", "Ngày phát hành", "Ngày", "ETD", "ETA", "Mã loại hình", "Cơ quan Hải quan", "Phương thức vận chuyển", "P/L No", "Booking No"]
+            }
+
+            rendered_labels = set()
+            
+            def highlight_match(row):
+                if row.get('Tất cả khớp?') == '✅':
+                    return ['background-color: rgba(16,185,129,0.08)'] * len(row)
+                else:
+                    return ['background-color: rgba(239,68,68,0.08)'] * len(row)
+
+            for group_name, keywords in GROUPS.items():
+                group_df = agg_df[agg_df['Trường'].isin(keywords)]
+                if not group_df.empty:
+                    st.markdown(f"#### {group_name}")
+                    styled_df = group_df.style.apply(highlight_match, axis=1)
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                    rendered_labels.update(group_df['Trường'].tolist())
+                    
+            other_df = agg_df[~agg_df['Trường'].isin(rendered_labels)]
+            if not other_df.empty:
+                st.markdown("#### 📌 Thông tin Khác")
+                styled_df = other_df.style.apply(highlight_match, axis=1)
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
 # ============================================================
