@@ -173,11 +173,10 @@ def extract_pdf(file: Any) -> dict[str, Any]:
         with pdfplumber.open(file) as pdf:
             for idx, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text() or ""
-                tables = page.extract_tables() or []
                 pages_data.append({
                     "page_num": idx,
                     "text": text,
-                    "tables": tables,
+                    "tables": [],
                 })
 
         raw_text = "\n\n".join(p["text"] for p in pages_data)
