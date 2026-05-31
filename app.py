@@ -197,21 +197,35 @@ def main():
         ''', unsafe_allow_html=True)
 
         st.divider()
-        st.markdown("🤖 **Cấu hình AI (Tùy chọn)**")
-        default_api_key = ""
-        try:
-            default_api_key = st.secrets.get("GEMINI_API_KEY", "")
-        except Exception:
-            pass
-            
-        api_key = st.text_input(
-            "Gemini API Key",
-            value=default_api_key,
-            type="password",
-            placeholder="Nhập API Key để AI phân tích...",
-            help="Sử dụng Google Gemini AI để đọc chứng từ siêu chính xác."
+        st.markdown("🤖 **Cấu hình AI Phân tích Lỗi**")
+        
+        ai_mode = st.selectbox(
+            "Chọn hệ thống AI",
+            options=["⚡ Thuật toán Cứng (Siêu Tốc)", "🌐 AI Online (Gemini)", "🖥️ AI Local (Ollama)"],
+            index=0,
+            help="Chọn công cụ để phân tích rủi ro sai lệch chứng từ."
         )
-        st.session_state.gemini_api_key = api_key
+        st.session_state.ai_mode = ai_mode
+        
+        if "Online" in ai_mode:
+            default_api_key = ""
+            try:
+                default_api_key = st.secrets.get("GEMINI_API_KEY", "")
+            except Exception:
+                pass
+                
+            api_key = st.text_input(
+                "Gemini API Key",
+                value=default_api_key,
+                type="password",
+                placeholder="Nhập API Key..."
+            )
+            st.session_state.gemini_api_key = api_key
+        elif "Local" in ai_mode:
+            st.session_state.ollama_host = st.text_input("Ollama Host URL", value="http://localhost:11434")
+            st.session_state.ollama_model = st.text_input("Tên Model", value="llama3")
+        else:
+            st.info("Chế độ này xử lý bằng thuật toán nội bộ, không cần Internet.")
 
         st.divider()
         doc_count = len(st.session_state.documents)
@@ -367,8 +381,13 @@ def _render_ai_analyzer_section(result, is_multiple, docs):
     
     if st.button("✨ Bắt đầu Phân tích Lỗi", type="secondary"):
         with st.spinner("AI đang phân tích rủi ro..."):
-            api_key = st.session_state.get("gemini_api_key", "")
-            response = analyze_discrepancies(result, is_multiple, api_key, docs)
+            config = {
+                'ai_mode': st.session_state.get('ai_mode', '⚡ Thuật toán Cứng (Siêu Tốc)'),
+                'api_key': st.session_state.get('gemini_api_key', ''),
+                'ollama_host': st.session_state.get('ollama_host', 'http://localhost:11434'),
+                'ollama_model': st.session_state.get('ollama_model', 'llama3')
+            }
+            response = analyze_discrepancies(result, is_multiple, config, docs)
             st.markdown(response)
 
 
