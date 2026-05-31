@@ -160,6 +160,9 @@ def extract_excel(file: Any) -> dict[str, Any]:
 def extract_pdf(file: Any) -> dict[str, Any]:
     """Trích xuất văn bản và bảng từ file PDF.
 
+    Tự động fallback sang EasyOCR nếu trang PDF là ảnh scan
+    (text < 50 ký tự).
+
     Parameters
     ----------
     file : UploadedFile
@@ -168,16 +171,29 @@ def extract_pdf(file: Any) -> dict[str, Any]:
     Returns
     -------
     dict
-        ``{'pages': [...], 'raw_text': str, 'page_count': int}``
+        ``{'pages': [...], 'raw_text': str, 'page_count': int, 'ocr_used': bool}``
         hoặc ``{'error': str}``.
     """
     try:
         _safe_seek(file)
         pages_data: list[dict[str, Any]] = []
+        ocr_used = False
 
         with pdfplumber.open(file) as pdf:
             for idx, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text() or ""
+
+                # Fallback OCR nếu text quá ngắn (ảnh scan)
+                if len(text.strip()) < 50:
+                    try:
+                        from utils.ocr import ocr_pdf_page
+                        ocr_text = ocr_pdf_page(page)
+                        if len(ocr_text.strip()) > len(text.strip()):
+                            text = ocr_text
+                            ocr_used = True
+                    except Exception:
+                        pass  # OCR không khả dụng → giữ text gốc
+
                 pages_data.append({
                     "page_num": idx,
                     "text": text,
@@ -189,6 +205,7 @@ def extract_pdf(file: Any) -> dict[str, Any]:
             "pages": pages_data,
             "raw_text": raw_text,
             "page_count": len(pages_data),
+            "ocr_used": ocr_used,
         }
 
     except Exception as exc:

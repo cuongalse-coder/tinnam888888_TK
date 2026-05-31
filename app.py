@@ -308,6 +308,7 @@ def main():
 
                 api_key = st.session_state.get("gemini_api_key", "")
                 fields = ai_parse_fields(raw_text, detection['type'], api_key)
+                ocr_used = result.get('ocr_used', False)
                 doc = {
                     'id': str(uuid.uuid4()),
                     'file_name': file.name,
@@ -317,6 +318,7 @@ def main():
                     'fields': fields,
                     'raw_text': raw_text[:5000],
                     'upload_date': datetime.now().isoformat(),
+                    'ocr_used': ocr_used,
                 }
                 st.session_state.documents.append(doc)
                 new_files_processed = True
@@ -334,8 +336,8 @@ def main():
             icon = doc_type_info.get('icon', '📄')
             type_name = doc_type_info.get('name', doc['doc_type'])
             field_count = len([f for f in doc['fields'].values() if f.get('value')])
-            
-            with st.expander(f"📁 {doc['file_name']} — {icon} {type_name} — {field_count} trường", expanded=False):
+            ocr_badge = " 🔍OCR" if doc.get('ocr_used') else ""
+            with st.expander(f"📁 {doc['file_name']} — {icon} {type_name}{ocr_badge} — {field_count} trường", expanded=False):
                 col_a, col_b = st.columns([3, 1])
                 with col_a:
                     type_options = list(DOCUMENT_TYPES.keys())
