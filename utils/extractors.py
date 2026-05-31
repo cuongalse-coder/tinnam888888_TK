@@ -70,21 +70,76 @@ def extract_excel(file: Any) -> dict[str, Any]:
         sheets: list[dict[str, Any]] = []
 
         if ext == ".csv":
-            df = pd.read_csv(file)
+            try:
+                df = pd.read_csv(file)
+            except Exception:
+                _safe_seek(file)
+                try:
+                    df = pd.read_csv(file, encoding="utf-8-sig")
+                except Exception:
+                    _safe_seek(file)
+                    df = pd.read_csv(file, encoding="latin-1")
             raw = _dataframe_to_raw_text(df)
             sheets.append({"name": "Sheet1", "dataframe": df, "raw_text": raw})
         else:
             # Excel – đọc tất cả sheet
-            _safe_seek(file)
-            xls = pd.ExcelFile(file, engine="openpyxl" if ext == ".xlsx" else None)
-            for sheet_name in xls.sheet_names:
-                df = pd.read_excel(xls, sheet_name=sheet_name)
-                raw = _dataframe_to_raw_text(df)
-                sheets.append({
-                    "name": sheet_name,
-                    "dataframe": df,
-                    "raw_text": raw,
-                })
+            try:
+                _safe_seek(file)
+                engine = "openpyxl" if ext == ".xlsx" else "xlrd"
+                xls = pd.ExcelFile(file, engine=engine)
+                for sheet_name in xls.sheet_names:
+                    df = pd.read_excel(xls, sheet_name=sheet_name)
+                    # Bỏ bớt dòng/cột trống hoàn toàn để tránh loãng
+                    df = df.dropna(how="all").dropna(axis=1, how="all")
+                    raw = _dataframe_to_raw_text(df)
+                    sheets.append({
+                        "name": sheet_name,
+                        "dataframe": df,
+                        "raw_text": raw,
+                    })
+            except Exception as excel_err:
+                # Hầu hết file .xls xuất từ phần mềm hải quan ở Việt Nam thực chất là file HTML chứa thẻ <table>
+                try:
+                    _safe_seek(file)
+                    dfs = pd.read_html(file)
+                    if dfs:
+                        for idx, df in enumerate(dfs):
+                            df = df.dropna(how="all").dropna(axis=1, how="all")
+                            raw = _dataframe_to_raw_text(df)
+                            sheets.append({
+                                "name": f"Bảng {idx+1}",
+                                "dataframe": df,
+                                "raw_text": raw,
+                            })
+                    else:
+                        raise ValueError("Không tìm thấy bảng dữ liệu HTML")
+                except Exception as html_err:
+                    # Nếu tất cả thất bại, đọc thô dưới dạng text để trích xuất chuỗi chữ
+                    try:
+                        _safe_seek(file)
+                        content = file.read()
+                        raw_text = ""
+                        for encoding in ["utf-8", "utf-8-sig", "utf-16", "cp1252", "latin-1"]:
+                            try:
+                                raw_text = content.decode(encoding)
+                                if raw_text.strip():
+                                    break
+                            except Exception:
+                                continue
+                        if raw_text.strip():
+                            df = pd.DataFrame({"Nội dung trích xuất": [raw_text[:1000]]})
+                            sheets.append({
+                                "name": "Văn bản gốc",
+                                "dataframe": df,
+                                "raw_text": raw_text,
+                            })
+                        else:
+                            raise ValueError(f"Không thể giải mã dữ liệu: {excel_err}")
+                    except Exception as text_err:
+                        return {"error": f"Lỗi định dạng Excel (Chi tiết: {excel_err} | Thử HTML: {html_err} | Thử Text: {text_err})"}
+
+        if not sheets:
+            return {"error": "Không thể trích xuất bất kỳ dữ liệu nào từ file Excel này"}
 
         all_raw = "\n\n".join(s["raw_text"] for s in sheets)
         return {"sheets": sheets, "raw_text": all_raw}
