@@ -140,6 +140,51 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": ["incoterm", "điều kiện"],
                 "type": "string",
             },
+            "typeCode": {
+                "label": "Mã loại hình",
+                "keywords": ["mã loại hình", "loại hình", "type"],
+                "type": "string",
+            },
+            "customsBranch": {
+                "label": "Cơ quan Hải quan",
+                "keywords": ["cơ quan hải quan", "chi cục hải quan", "hải quan đăng ký"],
+                "type": "string",
+            },
+            "transportMode": {
+                "label": "Phương thức vận chuyển",
+                "keywords": ["phương thức vận chuyển", "ptvc"],
+                "type": "string",
+            },
+            "packages": {
+                "label": "Số kiện",
+                "keywords": ["số kiện", "packages", "no of packages"],
+                "type": "number",
+            },
+            "contractNo": {
+                "label": "Số Hợp đồng",
+                "keywords": ["số hợp đồng", "contract no"],
+                "type": "string",
+            },
+            "contractDate": {
+                "label": "Ngày Hợp đồng",
+                "keywords": ["ngày hợp đồng", "contract date"],
+                "type": "date",
+            },
+            "paymentMethod": {
+                "label": "Phương thức thanh toán",
+                "keywords": ["phương thức thanh toán", "payment", "thanh toán"],
+                "type": "string",
+            },
+            "totalTax": {
+                "label": "Tổng tiền thuế",
+                "keywords": ["tổng số tiền thuế", "tiền thuế", "tax amount"],
+                "type": "number",
+            },
+            "coNo": {
+                "label": "Số C/O",
+                "keywords": ["c/o", "số c/o", "certificate of origin"],
+                "type": "string",
+            },
         },
     },
     "booking": {
@@ -398,6 +443,21 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": ["pod", "port of discharge"],
                 "type": "string",
             },
+            "contractNo": {
+                "label": "Số Hợp đồng",
+                "keywords": ["số hợp đồng", "contract no"],
+                "type": "string",
+            },
+            "contractDate": {
+                "label": "Ngày Hợp đồng",
+                "keywords": ["ngày hợp đồng", "contract date"],
+                "type": "date",
+            },
+            "paymentMethod": {
+                "label": "Phương thức thanh toán",
+                "keywords": ["phương thức thanh toán", "payment method", "terms of payment"],
+                "type": "string",
+            },
         },
     },
     "packing_list": {
@@ -490,6 +550,16 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "label": "Cảng dỡ (POD)",
                 "keywords": ["pod", "port of discharge"],
                 "type": "string",
+            },
+            "contractNo": {
+                "label": "Số Hợp đồng",
+                "keywords": ["số hợp đồng", "contract no"],
+                "type": "string",
+            },
+            "contractDate": {
+                "label": "Ngày Hợp đồng",
+                "keywords": ["ngày hợp đồng", "contract date"],
+                "type": "date",
             },
         },
     },
@@ -620,12 +690,15 @@ FIELD_MAPPING: list[list[str]] = [
     ],
     [
         "bill_of_lading.packages", "packing_list.packages",
-        "arrival_notice.packages",
+        "arrival_notice.packages", "customs_declaration.packages",
     ],
     ["customs_declaration.invoiceNo", "invoice.invoiceNo", "packing_list.invoiceNo"],
     ["customs_declaration.invoiceDate", "invoice.date"],
     ["customs_declaration.incoterm", "invoice.incoterm"],
     ["booking.eta", "arrival_notice.eta"],
+    ["customs_declaration.contractNo", "invoice.contractNo", "packing_list.contractNo"],
+    ["customs_declaration.contractDate", "invoice.contractDate", "packing_list.contractDate"],
+    ["customs_declaration.paymentMethod", "invoice.paymentMethod"],
 ]
 
 
