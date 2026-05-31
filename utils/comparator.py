@@ -240,8 +240,122 @@ def compare_documents(doc1: dict[str, Any], doc2: dict[str, Any]) -> dict[str, A
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# So sánh nhiều tài liệu
+# So sánh nhiều tài liệu (Cấu trúc mới theo Cụm Đối Chiếu)
 # ═══════════════════════════════════════════════════════════════════════════
+
+def _build_aggregate_for_docs(docs: list[dict[str, Any]], target_fields: list[str]) -> list[dict[str, Any]]:
+    """Tạo bảng đối chiếu cho danh sách tài liệu, chỉ so sánh các trường trong target_fields."""
+    field_values: dict[str, dict[str, str]] = {}
+    
+    # Gom dữ liệu từ các tài liệu
+    for doc in docs:
+        doc_id: str = doc.get("id", doc.get("file_name", ""))
+        fields = doc.get("fields", {})
+        doc_type = doc.get("doc_type", "")
+        
+        for field_key, field_data in fields.items():
+            full_key = f"{doc_type}.{field_key}"
+            # Chỉ lấy các trường có trong danh sách target (hoặc nếu target rỗng thì lấy hết)
+            if target_fields and full_key not in target_fields:
+                continue
+                
+            label = field_data.get("label", get_field_label(doc_type, field_key))
+            if label not in field_values:
+                field_values[label] = {}
+            field_values[label][doc_id] = field_data.get("value", "")
+
+    # Đánh giá khớp/sai
+    aggregate: list[dict[str, Any]] = []
+    for label, values_map in field_values.items():
+        unique_values = set(
+            _normalize_str(v) for v in values_map.values() if v
+        )
+        all_match = len(unique_values) <= 1
+        aggregate.append({
+            "label": label,
+            "values": values_map,
+            "all_match": all_match,
+        })
+    return aggregate
+
+
+def compare_by_clusters(docs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Phân loại và đối chiếu tài liệu theo từng cụm nghiệp vụ cụ thể."""
+    try:
+        invoices = [d for d in docs if d.get("doc_type") == "invoice"]
+        pls = [d for d in docs if d.get("doc_type") == "packing_list"]
+        bls = [d for d in docs if d.get("doc_type") in ("bill_of_lading", "arrival_notice", "booking")]
+        customs = [d for d in docs if d.get("doc_type") == "customs_declaration"]
+        
+        clusters = {}
+        
+        if invoices and pls:
+            clusters["Invoice vs Packing List"] = _build_aggregate_for_docs(invoices + pls, [
+                "invoice.seller", "packing_list.shipper",
+                "invoice.buyer", "packing_list.consignee",
+                "invoice.description", "packing_list.description",
+                "invoice.quantity", "packing_list.quantity",
+                "invoice.grossWeight", "packing_list.grossWeight",
+                "invoice.netWeight", "packing_list.netWeight",
+                "invoice.invoiceNo", "packing_list.invoiceNo",
+            ])
+            
+        if bls and pls:
+            clusters["Bill of Lading vs Packing List"] = _build_aggregate_for_docs(bls + pls, [
+                "bill_of_lading.containerNo", "packing_list.containerNo", "arrival_notice.containerNo", "booking.containerNo",
+                "bill_of_lading.grossWeight", "packing_list.grossWeight", "arrival_notice.grossWeight",
+                "bill_of_lading.measurement", "packing_list.measurement", "arrival_notice.measurement",
+                "bill_of_lading.packages", "packing_list.packages", "arrival_notice.packages",
+                "bill_of_lading.vessel", "packing_list.vessel", "arrival_notice.vessel", "booking.vessel",
+                "bill_of_lading.voyage", "packing_list.voyage", "arrival_notice.voyage", "booking.voyage",
+                "bill_of_lading.pol", "packing_list.pol", "booking.pol",
+                "bill_of_lading.pod", "packing_list.pod", "booking.pod",
+                "bill_of_lading.sealNo", "packing_list.sealNo",
+            ])
+            
+        if customs and (invoices or pls or bls):
+            clusters["Tờ khai Hải quan vs Chứng từ khác"] = _build_aggregate_for_docs(customs + invoices + pls + bls, [
+                "customs_declaration.exporter", "invoice.seller", "packing_list.shipper", "bill_of_lading.shipper",
+                "customs_declaration.importer", "invoice.buyer", "packing_list.consignee", "bill_of_lading.consignee",
+                "customs_declaration.description", "invoice.description", "packing_list.description",
+                "customs_declaration.quantity", "invoice.quantity", "packing_list.quantity",
+                "customs_declaration.grossWeight", "bill_of_lading.grossWeight", "packing_list.grossWeight", "arrival_notice.grossWeight",
+                "customs_declaration.containerNo", "bill_of_lading.containerNo", "packing_list.containerNo", "arrival_notice.containerNo", "invoice.containerNo",
+                "customs_declaration.value", "invoice.totalAmount",
+                "customs_declaration.invoiceNo", "invoice.invoiceNo", "packing_list.invoiceNo",
+                "customs_declaration.invoiceDate", "invoice.date",
+                "customs_declaration.incoterm", "invoice.incoterm",
+                "customs_declaration.paymentMethod", "invoice.paymentMethod",
+                "customs_declaration.blNo", "bill_of_lading.blNo", "arrival_notice.blNo",
+                "customs_declaration.hsCode",
+            ])
+            
+        # Nếu chỉ upload những file không nằm trong các cụm trên, ta tạo một cụm đối chiếu chung
+        if not clusters:
+            clusters["Đối chiếu Chung (Tất cả chứng từ)"] = _build_aggregate_for_docs(docs, [])
+            
+        # Thêm aggregate tổng hợp cho AI
+        all_aggregate = []
+        seen_labels = set()
+        for agg_list in clusters.values():
+            for item in agg_list:
+                if item["label"] not in seen_labels:
+                    all_aggregate.append(item)
+                    seen_labels.add(item["label"])
+                    
+        return {
+            "pair_results": [],
+            "aggregate": all_aggregate,
+            "clusters": clusters,
+        }
+    except Exception as exc:
+        return {
+            "pair_results": [],
+            "aggregate": [],
+            "clusters": {},
+            "error": f"Lỗi khi phân nhóm so sánh: {exc}",
+        }
+
 
 def compare_multiple(docs: list[dict[str, Any]]) -> dict[str, Any]:
     """So sánh tất cả các cặp tài liệu và tổng hợp kết quả.

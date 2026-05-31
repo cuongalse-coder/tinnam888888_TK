@@ -779,6 +779,7 @@ def _extract_value_near_keyword(
     text: str,
     keyword: str,
     field_type: str,
+    field_key: str = "",
 ) -> tuple[str | None, float]:
     """Tìm giá trị gần keyword trong văn bản.
 
@@ -798,6 +799,26 @@ def _extract_value_near_keyword(
 
     raw_value = match.group(1).strip()
     if not raw_value:
+        return None, 0.0
+
+    # Xử lý đặc biệt cho một số trường nghiệp vụ
+    if field_key == "incoterm":
+        inco_match = re.search(r'\b(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)\b', raw_value, re.IGNORECASE)
+        if inco_match:
+            return inco_match.group(1).upper(), 0.95
+        return None, 0.0
+
+    if field_key == "paymentMethod":
+        pay_match = re.search(r'\b(T/T|L/C|D/P|D/A|CAD|CASH|TELEGRAPHIC TRANSFER|LETTER OF CREDIT)\b', raw_value, re.IGNORECASE)
+        if pay_match:
+            return pay_match.group(1).upper(), 0.95
+        return None, 0.0
+
+    if field_key == "hsCode":
+        # Mã HS có thể dạng 1234.56.78 hoặc 12345678
+        hs_match = re.search(r'\b\d{4}[.\s]?\d{2}[.\s]?\d{2,4}\b', raw_value)
+        if hs_match:
+            return re.sub(r'[.\s]', '', hs_match.group()), 0.95
         return None, 0.0
 
     if field_type == "number":
@@ -935,7 +956,7 @@ def parse_fields(
 
         # Thử từng keyword, giữ kết quả có confidence cao nhất
         for kw in keywords:
-            value, conf = _extract_value_near_keyword(raw_text, kw, field_type)
+            value, conf = _extract_value_near_keyword(raw_text, kw, field_type, field_key)
             if value and conf > best_conf:
                 best_value = value
                 best_conf = conf

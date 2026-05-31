@@ -13,7 +13,13 @@ from datetime import datetime
 # Import utility modules
 from utils.extractors import extract_file
 from utils.parser import detect_document_type, parse_fields, ai_parse_fields, DOCUMENT_TYPES, FIELD_MAPPING
-from utils.comparator import compare_documents, compare_multiple, results_to_dataframe, export_to_excel
+from utils.comparator import (
+    compare_documents,
+    compare_multiple,
+    compare_by_clusters,
+    results_to_dataframe,
+    export_to_excel
+)
 from utils.ai_analyzer import analyze_discrepancies
 
 # ============================================================
@@ -365,7 +371,7 @@ def main():
                 _render_ai_analyzer_section(result, False, docs)
             else:
                 with st.spinner("⏳ Đang đối chiếu đa luồng..."):
-                    multi_result = compare_multiple(docs)
+                    multi_result = compare_by_clusters(docs)
                 _render_multi_comparison(multi_result, docs)
                 _render_ai_analyzer_section(multi_result, True, docs)
         else:
@@ -508,78 +514,52 @@ def _render_comparison_result(result, key_suffix=""):
 
 
 def _render_multi_comparison(multi_result, docs):
-    """Render comparison result for 3+ documents."""
+    """Render comparison result grouped by clusters."""
     st.divider()
-    st.subheader("📊 Kết quả So sánh Nhiều Chứng từ")
+    st.subheader("📊 Kết quả So sánh Theo Cụm Nghiệp vụ")
 
-    # Pair results
-    pair_results = multi_result.get('pair_results', [])
+    clusters = multi_result.get('clusters', {})
+    if not clusters:
+        st.info("Chưa có đủ dữ liệu để tạo cụm đối chiếu.")
+        return
 
-    for i, pair_result in enumerate(pair_results):
-        doc1_name = pair_result.get('doc1_name', '')
-        doc2_name = pair_result.get('doc2_name', '')
-        summary = pair_result.get('summary', {})
-        match_rate = summary.get('match_rate', 0)
+    def highlight_match(row):
+        val = row.get('Tất cả khớp?', '')
+        if isinstance(val, pd.Series):
+            val = val.iloc[0] if not val.empty else ''
+        val = str(val)
+        if val == '✅':
+            return ['background-color: rgba(16,185,129,0.08)'] * len(row)
+        else:
+            return ['background-color: rgba(239,68,68,0.08)'] * len(row)
 
-        color = "#10b981" if match_rate >= 0.8 else "#f59e0b" if match_rate >= 0.5 else "#ef4444"
-
-        with st.expander(
-            f"📊 {doc1_name} ↔ {doc2_name} — Tỷ lệ khớp: {match_rate:.0%}",
-            expanded=False,
-        ):
-            _render_comparison_result(pair_result, key_suffix=f"_multi_{i}")
-
-    # Aggregate view
-    aggregate = multi_result.get('aggregate', [])
-    if aggregate:
-        st.divider()
-        st.subheader("📋 Tổng hợp tất cả chứng từ")
+    for cluster_name, aggregate in clusters.items():
+        if not aggregate:
+            continue
+            
+        st.markdown(f"### 📌 Cụm: {cluster_name}")
+        
+        # Chỉ hiển thị các document có chứa ít nhất 1 giá trị trong cụm này
+        doc_has_value = {d['id']: False for d in docs}
+        for agg_item in aggregate:
+            for d_id, d_val in agg_item.get('values', {}).items():
+                if d_val and d_val != '—':
+                    doc_has_value[d_id] = True
 
         agg_data = []
         for item in aggregate:
-            row = {'Trường': item.get('label', '')}
+            row = {'Trường (Chỉ tiêu)': item.get('label', '')}
             for doc in docs:
-                val = item.get('values', {}).get(doc['id'], '—')
-                row[doc['file_name'][:20]] = str(val) if val else '—'
+                if doc_has_value.get(doc['id']):
+                    val = item.get('values', {}).get(doc['id'], '—')
+                    row[doc['file_name'][:20]] = str(val) if val else '—'
             row['Tất cả khớp?'] = '✅' if item.get('all_match') else '❌'
             agg_data.append(row)
 
         if agg_data:
             agg_df = pd.DataFrame(agg_data)
-            
-            GROUPS = {
-                "🚢 Nhóm Thông tin Vận tải": ["Tàu", "Chuyến", "Cảng xếp (POL)", "Cảng dỡ (POD)", "B/L No", "Số Vận đơn (B/L)", "Số container", "Số seal", "Loại container", "Ngày On Board"],
-                "🏢 Nhóm Thông tin Đối tác": ["Người xuất khẩu", "Người nhập khẩu", "Shipper", "Consignee", "Notify Party", "Người bán", "Người mua", "Bên được thông báo"],
-                "📦 Nhóm Thông tin Hàng hóa": ["Mô tả hàng hóa", "Số lượng", "Trọng lượng", "Trọng lượng tịnh (N/W)", "Trọng lượng cả bì (G/W)", "Thể tích (CBM)", "Thể tích", "Số kiện", "Mã HS", "Đơn vị", "Đơn giá", "Xuất xứ"],
-                "💰 Nhóm Tài chính & Hợp đồng": ["Trị giá", "Tổng giá trị", "Loại tiền", "Điều kiện giao hàng", "Điều kiện cước", "Số Hợp đồng", "Ngày Hợp đồng", "Phương thức thanh toán", "Tổng tiền thuế", "Số Invoice", "Invoice No", "Cước phí", "Số C/O"],
-                "📅 Nhóm Thông tin Chung": ["Số tờ khai", "Ngày đăng ký", "Ngày phát hành", "Ngày", "ETD", "ETA", "Mã loại hình", "Cơ quan Hải quan", "Phương thức vận chuyển", "P/L No", "Booking No"]
-            }
-
-            rendered_labels = set()
-            
-            def highlight_match(row):
-                val = row.get('Tất cả khớp?', '')
-                if isinstance(val, pd.Series):
-                    val = val.iloc[0] if not val.empty else ''
-                val = str(val)
-                if val == '✅':
-                    return ['background-color: rgba(16,185,129,0.08)'] * len(row)
-                else:
-                    return ['background-color: rgba(239,68,68,0.08)'] * len(row)
-
-            for group_name, keywords in GROUPS.items():
-                group_df = agg_df[agg_df['Trường'].isin(keywords)]
-                if not group_df.empty:
-                    st.markdown(f"#### {group_name}")
-                    styled_df = group_df.style.apply(highlight_match, axis=1)
-                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
-                    rendered_labels.update(group_df['Trường'].tolist())
-                    
-            other_df = agg_df[~agg_df['Trường'].isin(rendered_labels)]
-            if not other_df.empty:
-                st.markdown("#### 📌 Thông tin Khác")
-                styled_df = other_df.style.apply(highlight_match, axis=1)
-                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+            styled_df = agg_df.style.apply(highlight_match, axis=1)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
 
 
