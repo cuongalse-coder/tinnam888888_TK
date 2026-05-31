@@ -27,164 +27,68 @@ from pydantic import BaseModel
 # ═══════════════════════════════════════════════════════════════════════════
 
 DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
-    "customs_declaration": {
-        "name": "Tờ khai nhập/xuất",
-        "icon": "📋",
+    "customs_declaration_export": {
+        "name": "Tờ khai xuất khẩu",
+        "icon": "📤",
         "keywords": [
-            "tờ khai", "customs", "declaration", "hải quan",
-            "mã hs", "hs code", "người xuất khẩu", "người nhập khẩu",
+            "tờ khai hàng hóa xuất khẩu", "export customs declaration", "hải quan xuất khẩu"
         ],
         "fields": {
-            "declarationNo": {
-                "label": "Số tờ khai",
-                "keywords": ["số tờ khai", "declaration no", "số tk"],
-                "type": "string",
-            },
-            "date": {
-                "label": "Ngày đăng ký",
-                "keywords": ["ngày", "date", "ngày đăng ký"],
-                "type": "date",
-            },
-            "exporter": {
-                "label": "Người xuất khẩu",
-                "keywords": ["người xuất khẩu", "exporter", "shipper"],
-                "type": "string",
-            },
-            "importer": {
-                "label": "Người nhập khẩu",
-                "keywords": ["người nhập khẩu", "importer", "consignee"],
-                "type": "string",
-            },
-            "hsCode": {
-                "label": "Mã HS",
-                "keywords": ["mã hs", "hs code", "mã số"],
-                "type": "string",
-            },
-            "description": {
-                "label": "Mô tả hàng hóa",
-                "keywords": ["mô tả", "description", "tên hàng", "goods"],
-                "type": "string",
-            },
-            "quantity": {
-                "label": "Số lượng",
-                "keywords": ["số lượng", "quantity", "qty", "slg"],
-                "type": "number",
-            },
-            "unit": {
-                "label": "Đơn vị",
-                "keywords": ["đơn vị", "unit"],
-                "type": "string",
-            },
-            "grossWeight": {
-                "label": "Trọng lượng",
-                "keywords": ["trọng lượng", "gross weight", "weight", "g/w", "gw"],
-                "type": "number",
-            },
-            "value": {
-                "label": "Trị giá",
-                "keywords": ["trị giá", "value", "amount", "giá trị"],
-                "type": "number",
-            },
-            "currency": {
-                "label": "Loại tiền",
-                "keywords": ["loại tiền", "currency", "ccy"],
-                "type": "string",
-            },
-            "origin": {
-                "label": "Xuất xứ",
-                "keywords": ["xuất xứ", "origin", "country of origin"],
-                "type": "string",
-            },
-            "containerNo": {
-                "label": "Số container",
-                "keywords": ["số container", "container no", "cont no", "số cont"],
-                "type": "string",
-            },
-            "invoiceNo": {
-                "label": "Số Invoice",
-                "keywords": ["invoice no", "số hóa đơn"],
-                "type": "string",
-            },
-            "invoiceDate": {
-                "label": "Ngày Invoice",
-                "keywords": ["invoice date", "ngày hóa đơn"],
-                "type": "date",
-            },
-            "blNo": {
-                "label": "Số Vận đơn (B/L)",
-                "keywords": ["b/l no", "bl no", "số vận đơn"],
-                "type": "string",
-            },
-            "vessel": {
-                "label": "Tàu",
-                "keywords": ["vessel", "tàu"],
-                "type": "string",
-            },
-            "voyage": {
-                "label": "Chuyến",
-                "keywords": ["voyage", "chuyến"],
-                "type": "string",
-            },
-            "pol": {
-                "label": "Cảng xếp (POL)",
-                "keywords": ["pol", "port of loading"],
-                "type": "string",
-            },
-            "pod": {
-                "label": "Cảng dỡ (POD)",
-                "keywords": ["pod", "port of discharge"],
-                "type": "string",
-            },
-            "incoterm": {
-                "label": "Điều kiện giao hàng",
-                "keywords": ["incoterm", "điều kiện"],
-                "type": "string",
-            },
-            "typeCode": {
-                "label": "Mã loại hình",
-                "keywords": ["mã loại hình", "loại hình", "type"],
-                "type": "string",
-            },
-            "customsBranch": {
-                "label": "Cơ quan Hải quan",
-                "keywords": ["cơ quan hải quan", "chi cục hải quan", "hải quan đăng ký"],
-                "type": "string",
-            },
-            "transportMode": {
-                "label": "Phương thức vận chuyển",
-                "keywords": ["phương thức vận chuyển", "ptvc"],
-                "type": "string",
-            },
-            "packages": {
-                "label": "Số kiện",
-                "keywords": ["số kiện", "packages", "no of packages"],
-                "type": "number",
-            },
-            "contractNo": {
-                "label": "Số Hợp đồng",
-                "keywords": ["số hợp đồng", "contract no"],
-                "type": "string",
-            },
-            "contractDate": {
-                "label": "Ngày Hợp đồng",
-                "keywords": ["ngày hợp đồng", "contract date"],
-                "type": "date",
-            },
-            "paymentMethod": {
-                "label": "Phương thức thanh toán",
-                "keywords": ["phương thức thanh toán", "payment", "thanh toán"],
-                "type": "string",
-            },
-            "totalTax": {
-                "label": "Tổng tiền thuế",
-                "keywords": ["tổng số tiền thuế", "tiền thuế", "tax amount"],
-                "type": "number",
-            },
-            "coNo": {
-                "label": "Số C/O",
-                "keywords": ["c/o", "số c/o", "certificate of origin"],
-                "type": "string",
-            },
+            "declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai", "declaration no", "số tk"], "type": "string"},
+            "date": {"label": "Ngày đăng ký", "keywords": ["ngày đăng ký", "date"], "type": "date"},
+            "exporter": {"label": "Người xuất khẩu", "keywords": ["người xuất khẩu", "exporter", "người gửi hàng"], "type": "string"},
+            "importer": {"label": "Người nhập khẩu", "keywords": ["người nhập khẩu", "importer", "người nhận hàng"], "type": "string"},
+            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình", "loại hình"], "type": "string"},
+            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan", "chi cục hải quan"], "type": "string"},
+            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn", "b/l no", "bl no", "số bill"], "type": "string"},
+            "vessel": {"label": "Tên tàu / Phương tiện VC", "keywords": ["phương tiện vận chuyển", "tên tàu", "vessel"], "type": "string"},
+            "pol": {"label": "Cảng xếp hàng (POL)", "keywords": ["địa điểm xếp hàng", "cảng xếp hàng", "pol"], "type": "string"},
+            "pod": {"label": "Cảng dỡ hàng (POD)", "keywords": ["địa điểm dỡ hàng", "cảng dỡ hàng", "pod"], "type": "string"},
+            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện", "số kiện", "packages"], "type": "number"},
+            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight", "g/w"], "type": "number"},
+            "invoiceNo": {"label": "Số Hóa đơn (Invoice)", "keywords": ["số hóa đơn", "invoice no", "commercial invoice no"], "type": "string"},
+            "invoiceDate": {"label": "Ngày Hóa đơn", "keywords": ["ngày phát hành", "invoice date", "date of invoice"], "type": "date"},
+            "value": {"label": "Trị giá hóa đơn", "keywords": ["trị giá hóa đơn", "tổng trị giá", "giá trị"], "type": "number"},
+            "currency": {"label": "Mã đồng tiền", "keywords": ["mã đồng tiền", "loại tiền", "currency"], "type": "string"},
+            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán", "thanh toán", "payment method", "điều kiện thanh toán"], "type": "string"},
+            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "điều kiện giá hóa đơn", "incoterm", "term of delivery"], "type": "string"},
+            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã số hàng hóa", "mã hs", "hs code"], "type": "string"},
+            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả hàng hóa", "tên hàng", "description", "hàng hóa"], "type": "string"},
+            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng", "số lượng", "quantity", "qty"], "type": "number"},
+            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá", "unit price"], "type": "number"},
+            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho", "lưu kho", "địa điểm đích"], "type": "string"},
+        },
+    },
+    "customs_declaration_import": {
+        "name": "Tờ khai nhập khẩu",
+        "icon": "📥",
+        "keywords": [
+            "tờ khai hàng hóa nhập khẩu", "import customs declaration", "hải quan nhập khẩu"
+        ],
+        "fields": {
+            "declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai", "declaration no", "số tk"], "type": "string"},
+            "date": {"label": "Ngày đăng ký", "keywords": ["ngày đăng ký", "date"], "type": "date"},
+            "exporter": {"label": "Người xuất khẩu", "keywords": ["người xuất khẩu", "exporter", "người gửi hàng"], "type": "string"},
+            "importer": {"label": "Người nhập khẩu", "keywords": ["người nhập khẩu", "importer", "người nhận hàng"], "type": "string"},
+            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình", "loại hình"], "type": "string"},
+            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan", "chi cục hải quan"], "type": "string"},
+            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn", "b/l no", "bl no", "số bill"], "type": "string"},
+            "vessel": {"label": "Tên tàu / Phương tiện VC", "keywords": ["phương tiện vận chuyển", "tên tàu", "vessel"], "type": "string"},
+            "pol": {"label": "Cảng xếp hàng (POL)", "keywords": ["địa điểm xếp hàng", "cảng xếp hàng", "pol"], "type": "string"},
+            "pod": {"label": "Cảng dỡ hàng (POD)", "keywords": ["địa điểm dỡ hàng", "cảng dỡ hàng", "pod"], "type": "string"},
+            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện", "số kiện", "packages"], "type": "number"},
+            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight", "g/w"], "type": "number"},
+            "invoiceNo": {"label": "Số Hóa đơn (Invoice)", "keywords": ["số hóa đơn", "invoice no", "commercial invoice no"], "type": "string"},
+            "invoiceDate": {"label": "Ngày Hóa đơn", "keywords": ["ngày phát hành", "invoice date", "date of invoice"], "type": "date"},
+            "value": {"label": "Trị giá hóa đơn", "keywords": ["trị giá hóa đơn", "tổng trị giá", "giá trị"], "type": "number"},
+            "currency": {"label": "Mã đồng tiền", "keywords": ["mã đồng tiền", "loại tiền", "currency"], "type": "string"},
+            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán", "thanh toán", "payment method", "điều kiện thanh toán"], "type": "string"},
+            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "điều kiện giá hóa đơn", "incoterm", "term of delivery"], "type": "string"},
+            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã số hàng hóa", "mã hs", "hs code"], "type": "string"},
+            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả hàng hóa", "tên hàng", "description", "hàng hóa"], "type": "string"},
+            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng", "số lượng", "quantity", "qty"], "type": "number"},
+            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá", "unit price"], "type": "number"},
+            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho", "lưu kho", "địa điểm đích"], "type": "string"},
         },
     },
     "booking": {
@@ -641,47 +545,47 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
 
 FIELD_MAPPING: list[list[str]] = [
     [
-        "customs_declaration.exporter", "booking.shipper",
-        "bill_of_lading.shipper", "invoice.seller", "packing_list.shipper",
+        "customs_declaration_export.exporter", "customs_declaration_import.exporter", 
+        "booking.shipper", "bill_of_lading.shipper", "invoice.seller", "packing_list.shipper",
     ],
     [
-        "customs_declaration.importer", "booking.consignee",
-        "bill_of_lading.consignee", "invoice.buyer",
+        "customs_declaration_export.importer", "customs_declaration_import.importer", 
+        "booking.consignee", "bill_of_lading.consignee", "invoice.buyer",
         "packing_list.consignee", "arrival_notice.consignee",
     ],
     [
-        "customs_declaration.description", "bill_of_lading.description",
-        "invoice.description", "packing_list.description",
+        "customs_declaration_export.description", "customs_declaration_import.description",
+        "bill_of_lading.description", "invoice.description", "packing_list.description",
         "arrival_notice.description",
     ],
     [
-        "customs_declaration.quantity", "invoice.quantity",
-        "packing_list.quantity",
+        "customs_declaration_export.quantity", "customs_declaration_import.quantity",
+        "invoice.quantity", "packing_list.quantity",
     ],
     [
-        "customs_declaration.grossWeight", "bill_of_lading.grossWeight",
-        "packing_list.grossWeight", "arrival_notice.grossWeight",
+        "customs_declaration_export.grossWeight", "customs_declaration_import.grossWeight",
+        "bill_of_lading.grossWeight", "packing_list.grossWeight", "arrival_notice.grossWeight",
     ],
     [
-        "customs_declaration.containerNo", "booking.containerNo",
-        "bill_of_lading.containerNo", "invoice.containerNo",
-        "packing_list.containerNo", "arrival_notice.containerNo",
-    ],
-    ["customs_declaration.value", "invoice.totalAmount"],
-    [
-        "customs_declaration.vessel", "booking.vessel", "bill_of_lading.vessel", "arrival_notice.vessel", "invoice.vessel", "packing_list.vessel"
+        "customs_declaration_export.value", "customs_declaration_import.value", 
+        "invoice.totalAmount"
     ],
     [
-        "customs_declaration.voyage", "booking.voyage", "bill_of_lading.voyage", "arrival_notice.voyage", "invoice.voyage", "packing_list.voyage"
+        "customs_declaration_export.vessel", "customs_declaration_import.vessel",
+        "booking.vessel", "bill_of_lading.vessel", "arrival_notice.vessel", 
+        "invoice.vessel", "packing_list.vessel"
     ],
     [
-        "customs_declaration.pol", "booking.pol", "bill_of_lading.pol", "invoice.pol", "packing_list.pol"
+        "customs_declaration_export.pol", "customs_declaration_import.pol",
+        "booking.pol", "bill_of_lading.pol", "invoice.pol", "packing_list.pol"
     ],
     [
-        "customs_declaration.pod", "booking.pod", "bill_of_lading.pod", "invoice.pod", "packing_list.pod"
+        "customs_declaration_export.pod", "customs_declaration_import.pod",
+        "booking.pod", "bill_of_lading.pod", "invoice.pod", "packing_list.pod"
     ],
     [
-        "customs_declaration.blNo", "bill_of_lading.blNo", "arrival_notice.blNo"
+        "customs_declaration_export.blNo", "customs_declaration_import.blNo",
+        "bill_of_lading.blNo", "arrival_notice.blNo"
     ],
     ["bill_of_lading.notifyParty", "arrival_notice.notifyParty"],
     [
@@ -690,15 +594,16 @@ FIELD_MAPPING: list[list[str]] = [
     ],
     [
         "bill_of_lading.packages", "packing_list.packages",
-        "arrival_notice.packages", "customs_declaration.packages",
+        "arrival_notice.packages", "customs_declaration_export.packages", "customs_declaration_import.packages",
     ],
-    ["customs_declaration.invoiceNo", "invoice.invoiceNo", "packing_list.invoiceNo"],
-    ["customs_declaration.invoiceDate", "invoice.date"],
-    ["customs_declaration.incoterm", "invoice.incoterm"],
+    [
+        "customs_declaration_export.invoiceNo", "customs_declaration_import.invoiceNo", 
+        "invoice.invoiceNo", "packing_list.invoiceNo"
+    ],
+    ["customs_declaration_export.invoiceDate", "customs_declaration_import.invoiceDate", "invoice.date"],
+    ["customs_declaration_export.incoterm", "customs_declaration_import.incoterm", "invoice.incoterm"],
     ["booking.eta", "arrival_notice.eta"],
-    ["customs_declaration.contractNo", "invoice.contractNo", "packing_list.contractNo"],
-    ["customs_declaration.contractDate", "invoice.contractDate", "packing_list.contractDate"],
-    ["customs_declaration.paymentMethod", "invoice.paymentMethod"],
+    ["customs_declaration_export.paymentMethod", "customs_declaration_import.paymentMethod", "invoice.paymentMethod"],
 ]
 
 
