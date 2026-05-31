@@ -276,12 +276,12 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             },
             "seller": {
                 "label": "Người bán",
-                "keywords": ["seller", "người bán", "exporter", "beneficiary", "đơn vị bán hàng", "shipper"],
+                "keywords": ["seller", "người bán", "exporter", "beneficiary", "đơn vị bán hàng", "shipper", "shipper/ exporter", "shipper's name"],
                 "type": "string",
             },
             "buyer": {
                 "label": "Người mua",
-                "keywords": ["buyer", "người mua", "importer", "applicant", "tên đơn vị", "company's name", "purchaser"],
+                "keywords": ["buyer", "người mua", "importer", "applicant", "tên đơn vị", "company's name", "purchaser", "consignee's name", "for account"],
                 "type": "string",
             },
             "description": {
@@ -474,16 +474,27 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
         "keywords": [
             "arrival notice", "thông báo hàng đến",
             "notice of arrival", "giấy báo hàng",
+            "cargo arrival notice",
         ],
         "fields": {
             "blNo": {
                 "label": "B/L No",
-                "keywords": ["b/l no", "bl no", "bill of lading"],
+                "keywords": ["b/l no", "bl no", "bill of lading", "b/l number"],
+                "type": "string",
+            },
+            "bookingNo": {
+                "label": "Booking No",
+                "keywords": ["booking no", "booking number"],
                 "type": "string",
             },
             "vessel": {
                 "label": "Tàu",
-                "keywords": ["vessel", "tàu", "ship name"],
+                "keywords": ["vessel", "tàu", "ship name", "vessel / voy"],
+                "type": "string",
+            },
+            "shipper": {
+                "label": "Shipper",
+                "keywords": ["shipper", "shipper / exporter"],
                 "type": "string",
             },
             "voyage": {
@@ -535,6 +546,125 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "label": "Cước phí",
                 "keywords": ["freight", "cước", "charges", "phí"],
                 "type": "number",
+            },
+        },
+    },
+    "debit_note": {
+        "name": "Debit Note",
+        "icon": "💳",
+        "keywords": [
+            "debit note", "d/n no", "debit", "phí vận chuyển",
+        ],
+        "fields": {
+            "dnNo": {
+                "label": "D/N No",
+                "keywords": ["d/n no", "debit note no", "dn no"],
+                "type": "string",
+            },
+            "date": {
+                "label": "Ngày",
+                "keywords": ["date", "ngày"],
+                "type": "date",
+            },
+            "shipper": {
+                "label": "Shipper",
+                "keywords": ["shipper", "người gửi"],
+                "type": "string",
+            },
+            "consignee": {
+                "label": "Consignee / To",
+                "keywords": ["to", "consignee", "người nhận"],
+                "type": "string",
+            },
+            "truckBill": {
+                "label": "Truck Bill",
+                "keywords": ["truck bill", "truck no", "số xe"],
+                "type": "string",
+            },
+            "truckNo": {
+                "label": "Truck No",
+                "keywords": ["truck no", "biển số xe", "ad"],
+                "type": "string",
+            },
+            "origin": {
+                "label": "Nơi đi (From)",
+                "keywords": ["from", "nơi đi", "origin"],
+                "type": "string",
+            },
+            "destination": {
+                "label": "Nơi đến (To)",
+                "keywords": ["to", "destination", "nơi đến"],
+                "type": "string",
+            },
+            "etd": {
+                "label": "ETD",
+                "keywords": ["etd", "ngày đi"],
+                "type": "date",
+            },
+            "eta": {
+                "label": "ETA",
+                "keywords": ["eta", "ngày đến"],
+                "type": "date",
+            },
+            "totalAmount": {
+                "label": "Tổng phí",
+                "keywords": ["total", "amount", "tổng", "total amount"],
+                "type": "number",
+            },
+            "currency": {
+                "label": "Loại tiền",
+                "keywords": ["currency", "loại tiền"],
+                "type": "string",
+            },
+        },
+    },
+    "customs_monitoring_list": {
+        "name": "DS Hàng hóa Giám sát HQ",
+        "icon": "📋",
+        "keywords": [
+            "danh sách hàng hóa", "đủ điều kiện qua khu vực giám sát",
+            "giám sát hải quan",
+        ],
+        "fields": {
+            "declarationNo": {
+                "label": "Số tờ khai",
+                "keywords": ["số tờ khai", "declaration no"],
+                "type": "string",
+            },
+            "date": {
+                "label": "Ngày tờ khai",
+                "keywords": ["ngày tờ khai", "date"],
+                "type": "date",
+            },
+            "company": {
+                "label": "Đơn vị XNK",
+                "keywords": ["đơn vị xnk", "đơn vị xuất nhập khẩu"],
+                "type": "string",
+            },
+            "taxCode": {
+                "label": "Mã số thuế",
+                "keywords": ["mã số thuế", "tax code"],
+                "type": "string",
+            },
+            "typeCode": {
+                "label": "Loại hình",
+                "keywords": ["loại hình", "type"],
+                "type": "string",
+            },
+            "status": {
+                "label": "Trạng thái",
+                "keywords": ["trạng thái tờ khai", "status"],
+                "type": "string",
+            },
+            "lane": {
+                "label": "Luồng",
+                "keywords": ["luồng", "lane"],
+                "type": "string",
+            },
+            "customsBranch": {
+                "label": "Chi cục HQ giám sát",
+                "keywords": ["chi cục hải quan giám sát", "chi cục hải quan"],
+                "type": "string",
             },
         },
     },
@@ -891,6 +1021,17 @@ def parse_fields(
     if doc_type.startswith("customs_declaration"):
         return _parse_customs_declaration(raw_text, doc_type)
 
+    # Commercial Invoice & Packing List - format "1) Shipper" hoặc Samsung SDS
+    if doc_type == "invoice":
+        lower = raw_text[:2000].lower()
+        if ("1) shipper" in lower or "shipper/ exporter" in lower or 
+            "shipper\'s name" in lower or "invoice & packing list" in lower or
+            "commercial invoice & packing list" in lower or
+            "commercial invoice &packing list" in lower):
+            result = _parse_commercial_invoice_pl(raw_text)
+            if len(result) >= 3:
+                return result
+
     fields_def = DOCUMENT_TYPES[doc_type]["fields"]
     results: dict[str, dict[str, Any]] = {}
 
@@ -1133,6 +1274,183 @@ def _parse_customs_declaration(
         parsed = _parse_number(up_matches[0])
         if parsed is not None:
             _set("unitPrice", str(parsed))
+
+    return results
+
+
+
+def _parse_commercial_invoice_pl(
+    raw_text: str,
+) -> dict[str, dict[str, Any]]:
+    """Parser chuyên biệt cho Commercial Invoice & Packing List format Samsung.
+    
+    Hỗ trợ 2 format:
+    - "1) Shipper/ Exporter" format
+    - "Invoice No. XXX    Invoice Date YYYY/MM/DD" format (Samsung SDS)
+    """
+    results: dict[str, dict[str, Any]] = {}
+    fields_def = DOCUMENT_TYPES["invoice"]["fields"]
+
+    def _set(key: str, value: str, conf: float = 0.85):
+        if key in fields_def and value and value.strip() and len(value.strip()) > 1:
+            results[key] = {
+                "value": value.strip(),
+                "confidence": conf,
+                "label": fields_def[key]["label"],
+            }
+
+    # --- Invoice No ---
+    # Format 1: "8) NO.&DATE\nXXX  January 29, 2019"
+    m = re.search(r'(?:NO\.\s*&\s*DATE|NO\.\s*AND\s*DATE)\s*\n?\s*([A-Z0-9][\w.-]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("invoiceNo", m.group(1))
+    else:
+        # Format 2: "Invoice No. BRSEV20150624" or "Invoice No.: DQR5SEV19960121"
+        m = re.search(r'Invoice\s*No\.?:?\s+([A-Z0-9][\w.-]+)', raw_text, re.IGNORECASE)
+        if m:
+            _set("invoiceNo", m.group(1))
+
+    # --- Date ---
+    # Format 1: "0650-19CSMHK January 29, 2019"
+    m = re.search(r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}', raw_text, re.IGNORECASE)
+    if m:
+        _set("date", m.group(0))
+    else:
+        # Format 2: "Invoice Date 2015/06/22" or "Invoice Date: 2020/1/20"
+        m = re.search(r'Invoice\s*Date:?\s+(\d{4}/\d{1,2}/\d{1,2})', raw_text, re.IGNORECASE)
+        if m:
+            parsed = _parse_date(m.group(1))
+            _set("date", parsed or m.group(1))
+
+    # --- Shipper / Exporter / Seller ---
+    for pattern in [
+        r'(?:1\)\s*)?Shipper/?\s*Exporter\s*:?\s*\n\s*([^\n]+)',
+        r"Shipper's\s*Name\s*&\s*Address\s*:?\s*\n\s*([^\n]+)",
+        r"Seller's\s*Name\s*&\s*Address\s*:?\s*\n\s*([^\n]+)",
+    ]:
+        m = re.search(pattern, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            val = re.sub(r'\s*\d+\)\s*.*$', '', val).strip()
+            if val and not val.startswith('8)') and len(val) > 3:
+                _set("seller", val)
+                break
+
+    # --- Buyer / Consignee ---
+    for pattern in [
+        r'(?:2\)\s*)?For\s*Account\s*&\s*Risk\s*(?:of\s*messers)?\s*:?\s*\n\s*([^\n]+)',
+        r"Consignee's\s*Name\s*&\s*Address\s*:?\s*\n\s*([^\n]+)",
+        r'Sold\s*to\s*:?\s*\n?\s*([^\n]+)',
+        r'Ship\s*to\s*:?\s*\n?\s*([^\n]+)',
+    ]:
+        m = re.search(pattern, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            val = re.sub(r'\s*\d+\)\s*.*$', '', val).strip()
+            if val and len(val) > 3:
+                _set("buyer", val)
+                break
+
+    # --- Incoterm ---
+    # Format 1: "* FOB" (Samsung)
+    m = re.search(r'\*\s*(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)\b', raw_text, re.IGNORECASE)
+    if m:
+        _set("incoterm", m.group(1).upper())
+    else:
+        # Format 2: "Terms of Delivery: FOB" (BYD)
+        m = re.search(r'Terms\s*of\s*Delivery\s*:?\s*(FOB|CIF|EXW|FCA|CPT|CIP|DAP|DPU|DDP|FAS|CFR)', raw_text, re.IGNORECASE)
+        if m:
+            _set("incoterm", m.group(1).upper())
+
+    # --- POL ---
+    m = re.search(r'PORT\s*OF\s*LOAD(?:ING)?\s*:?\s*([^\n\t]+?)(?:\t|\n|$)', raw_text, re.IGNORECASE)
+    if m:
+        _set("pol", m.group(1).strip())
+
+    # --- POD / Final Destination ---
+    for pat in [
+        r'FINAL\s*DESTINATION\s*:?\s*([^\n\t]+?)(?:\t|\n|Carrier|Shipped|$)',
+        r'PORT\s*OF\s*DISCHARGE\s*:?\s*([^\n\t]+?)(?:\t|\n|$)',
+        r'PORT\s*OF\s*DESTINATION\s*:?\s*([^\n\t]+?)(?:\t|\n|Final|Carrier|$)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            if val and len(val) > 2:
+                _set("pod", val)
+                break
+
+    # --- Vessel / Flight ---
+    for pat in [
+        r'VESSEL/?\s*FLIGHT\s*:?\s*([^\n]+)',
+        r'VESSEL\s*/?\s*VOY\s*:?\s*([^\n]+)',
+        r'Shipped\s*via\s*:?\s*([^\n\t]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            if val and len(val) > 1:
+                _set("vessel", val)
+                break
+
+    # --- Payment Terms ---
+    m = re.search(r'Terms\s*of\s*Payment\s*:?\s*([^\n\t]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("paymentMethod", m.group(1).strip()[:60]) if "paymentMethod" in fields_def else None
+
+    # --- Currency ---
+    m = re.search(r'\b(USD|EUR|JPY|CNY|KRW|VND|GBP|SGD|THB|TWD)\b', raw_text)
+    if m:
+        _set("currency", m.group(1))
+
+    # --- Total Amount ---
+    # Search for "TOTAL" line with number
+    totals = re.findall(r'TOTAL\s*:?\s*([\d,]+\.?\d*)', raw_text, re.IGNORECASE)
+    if totals:
+        for t in totals:
+            parsed = _parse_number(t)
+            if parsed is not None and parsed > 0:
+                _set("totalAmount", str(parsed))
+                break
+
+    # --- Container No ---
+    container_match = re.search(r'\b([A-Z]{4}\d{7})\b', raw_text)
+    if container_match:
+        _set("containerNo", container_match.group(1))
+
+    # --- Origin ---
+    m = re.search(r'(?:COUNTRY\s*OF\s*ORIGIN|ORIGIN)\s*:?\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("origin", m.group(1).strip()[:50])
+
+    # --- Sailing Date ---
+    m = re.search(r'SAILING\s*ON\s*OR\s*ABOUT\s*:?\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("sailingDate", m.group(1).strip()) if "sailingDate" in fields_def else None
+
+    # --- Payment Terms ---
+    m = re.search(r'Payment\s+(?:within\s+)?(\d+\s*days[^\n]*)', raw_text, re.IGNORECASE)
+    if m:
+        _set("paymentMethod", m.group(0).strip()[:80]) if "paymentMethod" in fields_def else None
+
+    # --- Gross Weight ---
+    gw_matches = re.findall(r'(?:G\.?\s*W\.?|GROSS\s*(?:WEIGHT|WT))\s*:?\s*([\d,.]+)\s*(?:KGS?|KG)', raw_text, re.IGNORECASE)
+    if gw_matches:
+        for g in gw_matches:
+            parsed = _parse_number(g)
+            if parsed is not None and parsed > 0:
+                # Use a field that exists
+                pass  # grossWeight not in invoice fields_def typically
+
+    # --- Net Weight ---
+    nw_matches = re.findall(r'(?:N\.?\s*W\.?|NET\s*(?:WEIGHT|WT))\s*:?\s*([\d,.]+)\s*(?:KGS?|KG)', raw_text, re.IGNORECASE)
+
+    # --- Quantity ---
+    qty_matches = re.findall(r'(?:QTY|QUANTITY)\s*:?\s*([\d,]+)', raw_text, re.IGNORECASE)
+    if qty_matches:
+        parsed = _parse_number(qty_matches[0])
+        if parsed is not None:
+            _set("quantity", str(parsed))
 
     return results
 
