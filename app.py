@@ -372,7 +372,7 @@ def _render_ai_analyzer_section(result, is_multiple, docs):
             st.markdown(response)
 
 
-def _render_comparison_result(result):
+def _render_comparison_result(result, key_suffix=""):
     """Render comparison result for 2 documents."""
     summary = result.get('summary', {})
 
@@ -469,7 +469,7 @@ def _render_comparison_result(result):
                     file_name=f"so-sanh-{datetime.now().strftime('%Y%m%d-%H%M')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
-                    key="export_excel",
+                    key=f"export_excel{key_suffix}",
                 )
             except Exception as e:
                 st.error(f"Lỗi xuất Excel: {e}")
@@ -482,7 +482,7 @@ def _render_comparison_result(result):
                 file_name=f"so-sanh-{datetime.now().strftime('%Y%m%d-%H%M')}.csv",
                 mime="text/csv",
                 use_container_width=True,
-                key="export_csv",
+                key=f"export_csv{key_suffix}",
             )
     else:
         st.info("Không tìm thấy trường chung để so sánh giữa hai chứng từ.")
@@ -496,7 +496,7 @@ def _render_multi_comparison(multi_result, docs):
     # Pair results
     pair_results = multi_result.get('pair_results', [])
 
-    for pair_result in pair_results:
+    for i, pair_result in enumerate(pair_results):
         doc1_name = pair_result.get('doc1_name', '')
         doc2_name = pair_result.get('doc2_name', '')
         summary = pair_result.get('summary', {})
@@ -508,7 +508,7 @@ def _render_multi_comparison(multi_result, docs):
             f"📊 {doc1_name} ↔ {doc2_name} — Tỷ lệ khớp: {match_rate:.0%}",
             expanded=False,
         ):
-            _render_comparison_result(pair_result)
+            _render_comparison_result(pair_result, key_suffix=f"_multi_{i}")
 
     # Aggregate view
     aggregate = multi_result.get('aggregate', [])
