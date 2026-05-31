@@ -526,18 +526,23 @@ def _render_multi_comparison(multi_result, docs):
     from utils.comparator import compare_ecus_centric
     
     st.divider()
-    st.subheader("📊 Bảng Đối Chiếu Chuẩn ECUS VNACCS")
-    st.markdown("Bảng tổng hợp đối chiếu tất cả các chứng từ dựa trên bộ tiêu chí chuẩn của Tờ khai Hải quan (ECUS).")
-
+    
     if not docs:
         st.info("Chưa có chứng từ nào để so sánh.")
         return
 
-    ecus_results = compare_ecus_centric(docs)
+    ecus_output = compare_ecus_centric(docs)
     
-    if not ecus_results:
+    if not ecus_output or not ecus_output.get("results"):
         st.warning("Không thể tạo bảng đối chiếu ECUS. Vui lòng kiểm tra lại chứng từ tải lên.")
         return
+        
+    ecus_results = ecus_output["results"]
+    ecus_type = ecus_output["type"]
+    
+    title_suffix = "(Nhập Khẩu)" if ecus_type == "customs_declaration_import" else "(Xuất Khẩu)"
+    st.subheader(f"📊 Bảng Đối Chiếu Chuẩn ECUS VNACCS {title_suffix}")
+    st.markdown(f"Bảng tổng hợp đối chiếu tất cả các chứng từ dựa trên bộ tiêu chí chuẩn của Tờ khai Hải quan {title_suffix}.")
 
     def highlight_match(row):
         val = row.get('Trạng thái', '')
