@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from pathlib import PurePosixPath
 from typing import Any
 
@@ -374,11 +375,17 @@ def extract_file(
                 "raw_text": "",
                 "error": data["error"],
             }
+            
+        raw_text = data.get("raw_text", "")
+        # Lọc sạch các từ khóa rác nan, NaN, NaT do lỗi parser của Pandas sinh ra
+        if raw_text:
+            raw_text = re.sub(r'\b(nan|NaN|NaT|<NA>)\b', '', raw_text, flags=re.IGNORECASE)
+            raw_text = re.sub(r'\s+', ' ', raw_text).strip()
 
         return {
             "file_type": file_type,
             "data": data,
-            "raw_text": data.get("raw_text", ""),
+            "raw_text": raw_text,
             "error": None,
         }
 
