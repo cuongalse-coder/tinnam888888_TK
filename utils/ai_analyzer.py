@@ -6,21 +6,21 @@ from google import genai
 
 # A simple rule-based dictionary for offline use
 RULE_BASED_DICTIONARY = {
-    "Tàu": ("Trung bình", "Khó theo dõi lịch trình, có thể trễ hạn giao hàng.", "Liên hệ Hãng tàu/Forwarder xin tu chỉnh B/L hoặc thông báo thay đổi tàu."),
-    "Chuyến": ("Trung bình", "Trễ chuyến, rớt tàu, tốn phí lưu kho.", "Xác nhận lại Booking với Hãng tàu."),
-    "Cảng xếp": ("Cao", "Lên nhầm tàu, sai tuyến đường, tốn chi phí vận chuyển lại.", "Kiểm tra lại hợp đồng và Booking, yêu cầu tu chỉnh ngay lập tức."),
-    "Cảng dỡ": ("Cao", "Hàng đến sai đích, lưu kho bãi, không thông quan được.", "Tu chỉnh B/L khẩn cấp với Hãng tàu."),
-    "B/L No": ("Cao", "Hải quan từ chối tờ khai, không lấy được lệnh giao hàng (D/O).", "Kiểm tra số B/L gốc, sửa lại Tờ khai hải quan hoặc Invoice/Packing List nếu sai."),
-    "Số Vận đơn": ("Cao", "Hải quan từ chối tờ khai, không lấy được lệnh giao hàng (D/O).", "Kiểm tra số B/L gốc, sửa lại Tờ khai hải quan hoặc Invoice/Packing List nếu sai."),
-    "Số container": ("Cao", "Rớt luồng đỏ, hải quan phạt tiền do sai khai báo manifest.", "Kiểm tra Phiếu cân (VGM) / EIR, xin tu chỉnh Manifest và sửa Tờ khai ngay."),
-    "Số seal": ("Trung bình", "Hải quan nghi ngờ hàng bị mở, rớt luồng đỏ kiểm hóa.", "Xin xác nhận từ kho/cảng, tu chỉnh Manifest và Tờ khai."),
-    "Người xuất khẩu": ("Cao", "Ngân hàng từ chối L/C, sai chủ thể hợp đồng.", "Yêu cầu Shipper sửa Invoice/Packing List hoặc tu chỉnh B/L."),
-    "Người nhập khẩu": ("Cao", "Hải quan không cho thông quan, không lấy được D/O.", "Yêu cầu Shipper hoặc Hãng tàu sửa lại thông tin Consignee."),
-    "Trọng lượng": ("Cao", "Hải quan phạt do khai sai trọng lượng, rớt luồng đỏ.", "Kiểm tra lại VGM, yêu cầu sửa Tờ khai và Manifest."),
-    "Số lượng": ("Cao", "Thiếu/thừa hàng, hải quan bắt lỗi trốn thuế hoặc sai số liệu.", "Kiểm đếm lại hàng, sửa Invoice/Packing list và Tờ khai."),
-    "Trị giá": ("Cao", "Ngân hàng từ chối thanh toán, Hải quan truy thu thuế hoặc phạt.", "Sửa đổi Tờ khai và Invoice gốc ngay lập tức."),
-    "Điều kiện giao": ("Trung bình", "Tranh chấp chi phí vận tải, sai lệch tính thuế hải quan.", "Xác nhận lại với đối tác theo Hợp đồng."),
-    "Số Invoice": ("Trung bình", "Khó thanh toán, sai lệch hồ sơ kế toán.", "Yêu cầu Shipper cấp lại Invoice đúng số."),
+    "Tàu": ("Khó theo dõi lịch trình, có thể trễ hạn giao hàng.", "Liên hệ Hãng tàu/Forwarder xin tu chỉnh B/L hoặc thông báo thay đổi tàu."),
+    "Chuyến": ("Trễ chuyến, rớt tàu, tốn phí lưu kho.", "Xác nhận lại Booking với Hãng tàu."),
+    "Cảng xếp": ("Lên nhầm tàu, sai tuyến đường, tốn chi phí vận chuyển lại.", "Kiểm tra lại hợp đồng và Booking, yêu cầu tu chỉnh ngay lập tức."),
+    "Cảng dỡ": ("Hàng đến sai đích, lưu kho bãi, không thông quan được.", "Tu chỉnh B/L khẩn cấp với Hãng tàu."),
+    "B/L No": ("Hải quan từ chối tờ khai, không lấy được lệnh giao hàng (D/O).", "Kiểm tra số B/L gốc, sửa lại Tờ khai hải quan hoặc Invoice/Packing List nếu sai."),
+    "Số Vận đơn": ("Hải quan từ chối tờ khai, không lấy được lệnh giao hàng (D/O).", "Kiểm tra số B/L gốc, sửa lại Tờ khai hải quan hoặc Invoice/Packing List nếu sai."),
+    "Số container": ("Rớt luồng đỏ, hải quan phạt tiền do sai khai báo manifest.", "Kiểm tra Phiếu cân (VGM) / EIR, xin tu chỉnh Manifest và sửa Tờ khai ngay."),
+    "Số seal": ("Hải quan nghi ngờ hàng bị mở, rớt luồng đỏ kiểm hóa.", "Xin xác nhận từ kho/cảng, tu chỉnh Manifest và Tờ khai."),
+    "Người xuất khẩu": ("Ngân hàng từ chối L/C, sai chủ thể hợp đồng.", "Yêu cầu Shipper sửa Invoice/Packing List hoặc tu chỉnh B/L."),
+    "Người nhập khẩu": ("Hải quan không cho thông quan, không lấy được D/O.", "Yêu cầu Shipper hoặc Hãng tàu sửa lại thông tin Consignee."),
+    "Trọng lượng": ("Hải quan phạt do khai sai trọng lượng, rớt luồng đỏ.", "Kiểm tra lại VGM, yêu cầu sửa Tờ khai và Manifest."),
+    "Số lượng": ("Thiếu/thừa hàng, hải quan bắt lỗi trốn thuế hoặc sai số liệu.", "Kiểm đếm lại hàng, sửa Invoice/Packing list và Tờ khai."),
+    "Trị giá": ("Ngân hàng từ chối thanh toán, Hải quan truy thu thuế hoặc phạt.", "Sửa đổi Tờ khai và Invoice gốc ngay lập tức."),
+    "Điều kiện giao": ("Tranh chấp chi phí vận tải, sai lệch tính thuế hải quan.", "Xác nhận lại với đối tác theo Hợp đồng."),
+    "Số Invoice": ("Khó thanh toán, sai lệch hồ sơ kế toán.", "Yêu cầu Shipper cấp lại Invoice đúng số."),
 }
 
 def analyze_discrepancies(result: dict, is_multiple: bool, config: dict, docs: list = None) -> str:
@@ -62,13 +62,10 @@ Hệ thống phần mềm soi chéo chứng từ vừa phát hiện các lỗi s
 {issues_text}
 
 Nhiệm vụ của bạn:
-1. Đánh giá nhanh mức độ nghiêm trọng của những lỗi này (Cao/Trung bình/Thấp).
-2. Phân tích chi tiết rủi ro nghiệp vụ hải quan, logistics hoặc thanh toán nếu để nguyên các sai lệch này (VD: bị phạt tiền, rớt luồng đỏ, hải quan bác bỏ C/O, ngân hàng từ chối thanh toán L/C...).
-3. Đề xuất hành động khắc phục cụ thể, dứt khoát cho nhân viên chứng từ (CUS). (VD: Yêu cầu hãng tàu tu chỉnh B/L, hay yêu cầu Shipper sửa Invoice, theo chứng từ gốc nào).
+1. Phân tích chi tiết rủi ro nghiệp vụ hải quan, logistics hoặc thanh toán nếu để nguyên các sai lệch này (VD: bị phạt tiền, rớt luồng đỏ, hải quan bác bỏ C/O, ngân hàng từ chối thanh toán L/C...).
+2. Đề xuất hành động khắc phục cụ thể, dứt khoát cho nhân viên chứng từ (CUS). (VD: Yêu cầu hãng tàu tu chỉnh B/L, hay yêu cầu Shipper sửa Invoice, theo chứng từ gốc nào).
 
 Vui lòng trình bày kết quả NGẮN GỌN, CHUYÊN NGHIỆP theo cấu trúc sau:
-### 🔴 Mức độ Rủi ro Tổng quan: [Cao/Trung bình/Thấp]
-
 ### 🔍 Chi tiết Phân tích Rủi ro
 - **[Tên trường bị sai lệch]**: [Phân tích hậu quả nếu không sửa]
 (Liệt kê cho từng lỗi)
@@ -92,30 +89,24 @@ def _analyze_rule_based(issues: list) -> str:
     """Thuật toán xử lý tức thì, không cần Internet"""
     output = ["### ⚡ (Thuật toán Offline) Đánh giá Rủi ro & Khắc phục\n"]
     
-    high_risk_count = 0
     for issue in issues:
         label = issue['label']
         detail = issue['detail']
         
         # Tìm rule phù hợp
-        matched_rule = ("Thấp", "Gây khó khăn trong việc đối chiếu hồ sơ nội bộ.", "Kiểm tra lại chứng từ và xác nhận nội bộ.")
+        matched_rule = ("Gây khó khăn trong việc đối chiếu hồ sơ nội bộ.", "Kiểm tra lại chứng từ và xác nhận nội bộ.")
         for key, rule in RULE_BASED_DICTIONARY.items():
             if key.lower() in label.lower():
                 matched_rule = rule
                 break
                 
-        severity, risk, solution = matched_rule
-        if severity == "Cao":
-            high_risk_count += 1
+        risk, solution = matched_rule
             
-        icon = "🔴" if severity == "Cao" else "🟡" if severity == "Trung bình" else "🔵"
-        output.append(f"#### {icon} {label} (Mức độ: {severity})")
+        output.append(f"#### 🔍 {label}")
         output.append(f"- **Sai lệch:** {detail}")
         output.append(f"- **Rủi ro:** {risk}")
         output.append(f"- **Khắc phục:** {solution}\n")
         
-    overall = "Cao 🔴" if high_risk_count > 0 else "Trung bình 🟡"
-    output.insert(1, f"**Mức độ Rủi ro Tổng quan:** {overall}\n")
     return "\n".join(output)
 
 

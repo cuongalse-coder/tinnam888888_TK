@@ -24,9 +24,18 @@ from utils.parser import (
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _normalize_str(value: str) -> str:
-    """Chuẩn hoá chuỗi trước khi so sánh: lowercase, gộp khoảng trắng."""
-    return re.sub(r"\s+", " ", value.strip().lower())
+def _normalize_str(value: Any) -> str:
+    """Chuẩn hoá chuỗi trước khi so sánh: xoá toàn bộ khoảng trắng, ký tự đặc biệt."""
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    s = str(value).lower()
+    # Loại bỏ hậu tố .0 nếu bị ép kiểu dư
+    s = re.sub(r"\.0+$", "", s)
+    # Loại bỏ tất cả các ký tự không phải chữ cái/số
+    s = re.sub(r"[^\w\d]", "", s)
+    return s
 
 
 def _try_float(value: str) -> float | None:
