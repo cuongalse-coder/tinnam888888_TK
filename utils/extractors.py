@@ -39,11 +39,15 @@ def _file_ext(file: Any) -> str:
 
 def _dataframe_to_raw_text(df: pd.DataFrame) -> str:
     """Chuyển DataFrame thành chuỗi text thô (tab-separated)."""
+    # Xử lý NaN thành chuỗi rỗng để tránh bị biến thành chữ 'nan'
+    df_clean = df.fillna("")
     lines: list[str] = []
     # Header
-    lines.append("\t".join(str(c) for c in df.columns))
-    for _, row in df.iterrows():
-        lines.append("\t".join(str(v) for v in row.values))
+    cols = [str(c) if str(c) not in ['nan', 'NaN', '<NA>'] else "" for c in df_clean.columns]
+    lines.append("\t".join(cols))
+    for _, row in df_clean.iterrows():
+        vals = [str(v) if str(v) not in ['nan', 'NaN', '<NA>'] else "" for v in row.values]
+        lines.append("\t".join(vals))
     return "\n".join(lines)
 
 
