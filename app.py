@@ -14,6 +14,7 @@ from datetime import datetime
 from utils.extractors import extract_file
 from utils.parser import detect_document_type, parse_fields, ai_parse_fields, DOCUMENT_TYPES, FIELD_MAPPING
 from utils.comparator import compare_documents, compare_multiple, results_to_dataframe, export_to_excel
+from utils.ai_analyzer import analyze_discrepancies
 
 # ============================================================
 # Page Config
@@ -641,10 +642,12 @@ def page_compare():
             with st.spinner("⏳ Đang so sánh..."):
                 if len(selected_docs) == 2:
                     result = compare_documents(selected_docs[0], selected_docs[1])
-                    _render_comparison_result(result)
+                    st.session_state.current_compare_data = {'type': 'pair', 'result': result}
                 else:
                     multi_result = compare_multiple(selected_docs)
-                    _render_multi_comparison(multi_result, selected_docs)
+                    st.session_state.current_compare_data = {'type': 'multi', 'result': multi_result}
+                
+                st.session_state.current_compare_docs = [d['id'] for d in selected_docs]
 
                 # Save comparison
                 comp_record = {
@@ -654,6 +657,17 @@ def page_compare():
                     'doc_names': [d['file_name'] for d in selected_docs],
                 }
                 st.session_state.comparisons.append(comp_record)
+
+        # Render current comparison if it matches the selection
+        current_docs_ids = [d['id'] for d in selected_docs]
+        if getattr(st.session_state, 'current_compare_docs', None) == current_docs_ids:
+            comp_data = st.session_state.current_compare_data
+            if comp_data['type'] == 'pair':
+                _render_comparison_result(comp_data['result'])
+                _render_ai_analyzer_section(comp_data['result'], False, selected_docs)
+            else:
+                _render_multi_comparison(comp_data['result'], selected_docs)
+                _render_ai_analyzer_section(comp_data['result'], True, selected_docs)
 
     elif selected_docs:
         st.info("👆 Hãy chọn thêm chứng từ (tối thiểu 2)")
@@ -666,6 +680,18 @@ def page_compare():
                 date_str = comp.get('date', '')[:16].replace('T', ' ')
                 names = ", ".join(comp.get('doc_names', []))
                 st.markdown(f"• **{date_str}** — {names}")
+
+
+def _render_ai_analyzer_section(result, is_multiple, docs):
+    st.divider()
+    st.subheader("🤖 AI Phân tích Lỗi & Khuyến nghị")
+    st.info("Trợ lý AI sẽ đọc các lỗi sai lệch từ bảng trên và đóng vai trò Trưởng phòng Xuất Nhập Khẩu để tư vấn rủi ro.")
+    
+    if st.button("✨ Bắt đầu Phân tích Lỗi", type="secondary"):
+        with st.spinner("AI đang phân tích rủi ro..."):
+            api_key = st.session_state.get("gemini_api_key", "")
+            response = analyze_discrepancies(result, is_multiple, api_key, docs)
+            st.markdown(response)
 
 
 def _render_comparison_result(result):
