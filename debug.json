@@ -1,0 +1,120 @@
+{
+  "type": "customs_declaration_export",
+  "results": [
+    {
+      "Tiêu chí ECUS": "Số tờ khai",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Ngày đăng ký",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Người xuất khẩu",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Người nhập khẩu",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Mã loại hình",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Cơ quan Hải quan",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Số Vận đơn (B/L)",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Tên tàu / Phương tiện VC",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Cảng xếp hàng (POL)",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Cảng dỡ hàng (POD)",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Số lượng kiện",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Tổng trọng lượng",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Số Hóa đơn (Invoice)",
+      "1": "100",
+      "Trạng thái": "✅ Khớp"
+    },
+    {
+      "Tiêu chí ECUS": "Ngày Hóa đơn",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Trị giá hóa đơn",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Mã đồng tiền",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Phương thức thanh toán",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Điều kiện giao hàng",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Mã số hàng hóa (HS)",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Mô tả hàng hóa",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Lượng (Quantity)",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Đơn giá",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    },
+    {
+      "Tiêu chí ECUS": "Địa điểm lưu kho",
+      "1": "—",
+      "Trạng thái": "➖ Trống"
+    }
+  ]
+}

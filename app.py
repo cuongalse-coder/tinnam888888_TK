@@ -275,6 +275,11 @@ def main():
             key="file_uploader",
         )
 
+    if uploaded_files is not None:
+        current_file_names = [f.name for f in uploaded_files]
+        # Xóa những file trong session state mà không còn trong file_uploader (người dùng đã bấm X)
+        st.session_state.documents = [d for d in st.session_state.documents if d['file_name'] in current_file_names]
+
     if uploaded_files:
         st.divider()
         progress_bar = st.progress(0, text="Đang xử lý...")
@@ -625,6 +630,20 @@ def _render_multi_comparison(multi_result, docs):
                         tab_df.to_excel(writer, index=False, sheet_name=safe_sheet_name)
                 if not other_df.empty:
                     other_df.to_excel(writer, index=False, sheet_name="Khác")
+                
+                # Tạo thêm Sheet "Chi tiết đầy đủ" chứa toàn bộ thông tin gốc của các chứng từ
+                raw_data = []
+                for doc in docs:
+                    for field_key, field_data in doc.get("fields", {}).items():
+                        raw_data.append({
+                            "Chứng từ": doc["file_name"],
+                            "Loại chứng từ": doc["doc_type_name"],
+                            "Mã trường (Key)": field_key,
+                            "Tên trường (Label)": field_data.get("label", ""),
+                            "Giá trị": field_data.get("value", "")
+                        })
+                if raw_data:
+                    pd.DataFrame(raw_data).to_excel(writer, index=False, sheet_name="Chi tiết đầy đủ")
                     
             excel_bytes = output.getvalue()
             
