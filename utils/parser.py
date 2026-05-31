@@ -951,6 +951,65 @@ def detect_document_type(raw_text: str) -> dict[str, Any]:
     scores: dict[str, int] = {}
     max_possible: dict[str, int] = {}
 
+    # === Nhận diện nhanh bằng pattern cố định (ưu tiên cao) ===
+    lower_head = raw_text[:3000].lower()
+
+    # Tờ khai xuất/nhập - nhận diện nhanh
+    if "tờ khai hàng hóa xuất khẩu" in lower_head or "<exp>" in lower_head:
+        return {"type": "customs_declaration_export", "confidence": 0.95,
+                "name": DOCUMENT_TYPES["customs_declaration_export"]["name"],
+                "icon": DOCUMENT_TYPES["customs_declaration_export"]["icon"], "scores": {}}
+    if "tờ khai hàng hóa nhập khẩu" in lower_head or "<imp>" in lower_head:
+        return {"type": "customs_declaration_import", "confidence": 0.95,
+                "name": DOCUMENT_TYPES["customs_declaration_import"]["name"],
+                "icon": DOCUMENT_TYPES["customs_declaration_import"]["icon"], "scores": {}}
+
+    # Cargo Arrival Notice (ĐẶT TRƯỚC bill_of_lading và debit_note)
+    is_arrival = False
+    if "cargo arrival notice" in lower_head:
+        is_arrival = True
+    elif "arrival notice" in lower_head and ("b/l" in lower_head or "bl no" in lower_head or "vessel" in lower_head):
+        is_arrival = True
+    elif "arrival notice" in lower_head and ("consignee" in lower_head or "shipper" in lower_head):
+        is_arrival = True
+    # Wan Hai format: "B/L No: XXX" + "Est. Arrival Date:"
+    elif "est. arrival date" in lower_head and "b/l no" in lower_head:
+        is_arrival = True
+    # Evergreen format: "Subject : ARRIVAL NOTICE"
+    elif "subject" in lower_head and "arrival notice" in lower_head:
+        is_arrival = True
+
+    if is_arrival:
+        return {"type": "arrival_notice", "confidence": 0.95,
+                "name": DOCUMENT_TYPES["arrival_notice"]["name"],
+                "icon": DOCUMENT_TYPES["arrival_notice"]["icon"], "scores": {}}
+
+    # DS Hàng hóa Giám sát HQ
+    if "danh sách hàng hóa" in lower_head and "giám sát" in lower_head:
+        return {"type": "customs_monitoring_list", "confidence": 0.95,
+                "name": DOCUMENT_TYPES["customs_monitoring_list"]["name"],
+                "icon": DOCUMENT_TYPES["customs_monitoring_list"]["icon"], "scores": {}}
+
+    # Debit Note (chỉ detect khi CÓ "debit note" + "truck")
+    if "debit note" in lower_head and ("truck" in lower_head or "d/n no" in lower_head):
+        return {"type": "debit_note", "confidence": 0.95,
+                "name": DOCUMENT_TYPES["debit_note"]["name"],
+                "icon": DOCUMENT_TYPES["debit_note"]["icon"], "scores": {}}
+
+    # Commercial Invoice & Packing List
+    if ("commercial invoice" in lower_head and "packing list" in lower_head) or \
+       ("invoice & packing list" in lower_head) or ("invoice &packing list" in lower_head):
+        return {"type": "invoice", "confidence": 0.90,
+                "name": DOCUMENT_TYPES["invoice"]["name"],
+                "icon": DOCUMENT_TYPES["invoice"]["icon"], "scores": {}}
+
+    # Bill of Lading
+    if "bill of lading" in lower_head and ("shipper" in lower_head or "consignee" in lower_head):
+        return {"type": "bill_of_lading", "confidence": 0.90,
+                "name": DOCUMENT_TYPES["bill_of_lading"]["name"],
+                "icon": DOCUMENT_TYPES["bill_of_lading"]["icon"], "scores": {}}
+
+    # === Fuzzy keyword scoring (fallback) ===
     for doc_type, doc_def in DOCUMENT_TYPES.items():
         score = 0
         total = 0
@@ -1031,6 +1090,12 @@ def parse_fields(
             result = _parse_commercial_invoice_pl(raw_text)
             if len(result) >= 3:
                 return result
+
+    # Arrival Notice - parser chuyên biệt
+    if doc_type == "arrival_notice":
+        result = _parse_arrival_notice(raw_text)
+        if len(result) >= 2:
+            return result
 
     fields_def = DOCUMENT_TYPES[doc_type]["fields"]
     results: dict[str, dict[str, Any]] = {}
@@ -1277,6 +1342,149 @@ def _parse_customs_declaration(
 
     return results
 
+
+
+
+def _parse_arrival_notice(
+    raw_text: str,
+) -> dict[str, dict[str, Any]]:
+    """Parser chuyên biệt cho Giấy thông báo hàng đến (Arrival Notice).
+
+    Hỗ trợ các format:
+    - HMM/Hyundai: CARGO ARRIVAL NOTICE, B/L Number:, Vessel / VOY:
+    - Wan Hai: B/L No:, Est. Arrival Date:, CY-Terminal:
+    - Evergreen: TO:, From:, Subject: ARRIVAL NOTICE
+    - Heung-A: ARRIVAL NOTICE, B/L NO.:, VESSEL:
+    """
+    results: dict[str, dict[str, Any]] = {}
+    fields_def = DOCUMENT_TYPES["arrival_notice"]["fields"]
+
+    def _set(key: str, value: str, conf: float = 0.85):
+        if key in fields_def and value and value.strip() and len(value.strip()) > 1:
+            results[key] = {
+                "value": value.strip(),
+                "confidence": conf,
+                "label": fields_def[key]["label"],
+            }
+
+    # --- B/L Number ---
+    for pat in [
+        r'B/L\s*(?:Number|No\.?)\s*:?\s*([A-Z0-9][\w\s]*[\w]+)',
+        r'BL\s*NO\.?\s*:?\s*([A-Z0-9][\w]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            _set("blNo", m.group(1).strip())
+            break
+
+    # --- Booking No ---
+    m = re.search(r'Booking\s*No\.?\s*:?\s*([A-Z0-9][\w]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("bookingNo", m.group(1).strip())
+
+    # --- Vessel / VOY ---
+    for pat in [
+        r'Vessel\s*/?\s*VOY\s*:?\s*([^\n]+)',
+        r'VESSEL\s*:?\s*([^\n]+)',
+        r'Vessel\s*Name\s*:?\s*([^\n]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            if val and len(val) > 2:
+                _set("vessel", val)
+                break
+
+    # --- ETA ---
+    for pat in [
+        r'Est\.?\s*Arrival\s*Date\s*:?\s*([^\n]+)',
+        r'ETA\s*:?\s*([^\n]+)',
+        r'Arrival\s*Date\s*:?\s*([^\n]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            parsed = _parse_date(val)
+            _set("eta", parsed or val[:30])
+            break
+
+    # --- Shipper ---
+    for pat in [
+        r'Shipper\s*/?\s*Exporter\s*[:\n]\s*([^\n]+)',
+        r'Shipper\s*:?\s*\n\s*([^\n]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            # Remove "Consignee" if on same line
+            val = re.sub(r'\s*Consignee.*$', '', val).strip()
+            if val and len(val) > 3:
+                _set("shipper", val)
+                break
+
+    # --- Consignee ---
+    for pat in [
+        r'Consignee\s*:?\s*\n?\s*([^\n]+)',
+        r'TO\s*:\s*([^\n]+)',
+    ]:
+        m = re.search(pat, raw_text, re.IGNORECASE)
+        if m:
+            val = m.group(1).strip()
+            if val and len(val) > 3:
+                _set("consignee", val)
+                break
+
+    # --- Notify Party ---
+    m = re.search(r'Notify\s*Party\s*:?\s*\n?\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        val = m.group(1).strip()
+        if val and len(val) > 3 and val.lower() != 'party':
+            _set("notifyParty", val)
+
+    # --- Container No ---
+    container = re.search(r'\b([A-Z]{4}\d{7})\b', raw_text)
+    if container:
+        _set("containerNo", container.group(1))
+
+    # --- CY-Terminal / Discharge Port ---
+    m = re.search(r'CY-Terminal\s*:?\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        _set("description", "CY: " + m.group(1).strip())
+
+    # --- Gross Weight ---
+    m = re.search(r'(?:Gross|G\.?W\.?)\s*(?:Weight)?\s*:?\s*([\d,.]+)\s*(?:KGS?|KG)', raw_text, re.IGNORECASE)
+    if m:
+        parsed = _parse_number(m.group(1))
+        if parsed:
+            _set("grossWeight", str(parsed))
+
+    # --- Measurement / CBM ---
+    m = re.search(r'(?:Measurement|CBM|Volume)\s*:?\s*([\d,.]+)', raw_text, re.IGNORECASE)
+    if m:
+        parsed = _parse_number(m.group(1))
+        if parsed:
+            _set("measurement", str(parsed))
+
+    # --- Packages ---
+    m = re.search(r'(\d+)\s*(?:PKGS?|PACKAGES?|CTNS?|PLTS?|PCS)', raw_text, re.IGNORECASE)
+    if m:
+        _set("packages", m.group(1))
+
+    # --- Free Time ---
+    m = re.search(r'Free\s*Time\s*(?:Until|Expires?)\s*:?\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        parsed = _parse_date(m.group(1).strip())
+        if parsed:
+            _set("description", (results.get("description", {}).get("value", "") + " | FreeTime: " + parsed).strip(" | "))
+
+    # --- From (sending agent) ---
+    m = re.search(r'From\s*:\s*([^\n]+)', raw_text, re.IGNORECASE)
+    if m:
+        val = m.group(1).strip()
+        if val and len(val) > 5 and "shipper" not in results:
+            _set("shipper", val)
+
+    return results
 
 
 def _parse_commercial_invoice_pl(
