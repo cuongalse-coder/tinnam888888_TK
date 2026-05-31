@@ -975,7 +975,7 @@ def _parse_customs_declaration(
     if m:
         _set("importer", m.group(1).strip())
     else:
-        m = re.search(r'Người nhập khẩu.*?Tên\t+(.+?)(?:\t|\n)', raw_text, re.DOTALL)
+        m = re.search(r'Người nhập khẩu.*?Tên\t+([^\t\n]+)', raw_text, re.DOTALL)
         if m:
             _set("importer", m.group(1).strip())
 
@@ -991,36 +991,41 @@ def _parse_customs_declaration(
             _set("blNo", m.group(1))
 
     # --- Phương tiện vận chuyển ---
-    m = re.search(r'Phương tiện vận chuyển(?:\s+dự kiến)?\s*\n?\s*(.+?)(?:\n|$)', raw_text)
-    if m and m.group(1).strip() and m.group(1).strip() not in ('dự kiến', ''):
-        _set("vessel", m.group(1).strip())
-    else:
-        # Import: vessel ở dòng con (VN0662/25JAN)
-        m = re.search(r'Phương tiện vận chuyển.*?\n.*?(\w{2}\d{3,4}/\d{1,2}\w{3})', raw_text, re.DOTALL)
+    # PDF: "Phương tiện vận chuyển dự kiến\nTàu ABC"
+    # Excel: thường rỗng hoặc ở dòng riêng
+    m = re.search(r'Phương tiện vận chuyển(?:\s+dự kiến)?\s*\n\s*([^\n]{1,100}?)(?:\n|$)', raw_text)
+    if m:
+        val = m.group(1).strip()
+        # Loại bỏ nếu match nhầm vào label khác
+        if val and not val.startswith('Ngày') and not val.startswith('Ký hiệu') and val not in ('dự kiến', ''):
+            _set("vessel", val)
+    # Import: vessel ở dòng con (VN0662/25JAN)
+    if "vessel" not in results:
+        m = re.search(r'(\w{2}\d{3,4}/\d{1,2}\w{3})', raw_text)
         if m:
             _set("vessel", m.group(1))
 
     # --- Cảng xếp hàng (POL) ---
-    m = re.search(r'Địa điểm xếp hàng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    m = re.search(r'Địa điểm xếp hàng\s+(\S+)\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
     if m:
         _set("pol", f"{m.group(1)} {m.group(2).strip()}")
     else:
-        m = re.search(r'Địa điểm xếp hàng\s+(.+?)(?:\n|$)', raw_text)
+        m = re.search(r'Địa điểm xếp hàng\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
         if m:
             _set("pol", m.group(1).strip())
 
     # --- Cảng dỡ hàng (POD) ---
     # Xuất: "Địa điểm nhận hàng cuối cùng VNFBT SAMSUNG"
     # Nhập: "Địa điểm dỡ hàng VNHAN HA NOI"
-    m = re.search(r'Địa điểm nhận hàng cuối cùng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    m = re.search(r'Địa điểm nhận hàng cuối cùng\s+(\S+)\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
     if m:
         _set("pod", f"{m.group(1)} {m.group(2).strip()}")
     else:
-        m = re.search(r'Địa điểm dỡ hàng\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+        m = re.search(r'Địa điểm dỡ hàng\s+(\S+)\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
         if m:
             _set("pod", f"{m.group(1)} {m.group(2).strip()}")
         else:
-            m = re.search(r'Địa điểm nhận hàng cuối cùng\s+(.+?)(?:\n|$)', raw_text)
+            m = re.search(r'Địa điểm nhận hàng cuối cùng\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
             if m:
                 _set("pod", m.group(1).strip())
 
@@ -1039,17 +1044,26 @@ def _parse_customs_declaration(
             _set("grossWeight", str(parsed))
 
     # --- Địa điểm lưu kho ---
-    m = re.search(r'Địa điểm lưu kho\s+(\S+)\s+(.+?)(?:\n|$)', raw_text)
+    m = re.search(r'Địa điểm lưu kho\s+(\S+)\s+([^\t\n]+?)(?:\t|\n|$)', raw_text)
     if m:
         _set("locationOfStorage", f"{m.group(1)} {m.group(2).strip()}")
 
     # --- Số hóa đơn ---
+    # PDF: "Số hóa đơn B - 4137"
+    # Excel: "Số hóa đơn\t\tB\t-\t4137" hoặc "Số hóa đơn\tA - 9013218827"
     m = re.search(r'Số hóa đơn\s+(.+?)(?:\n|$)', raw_text)
     if m:
         val = m.group(1).strip()
-        val = re.sub(r'^[A-Z]\s*-\s*', '', val).strip()
+        # Gom lại nếu dạng tab-sep: "B\t-\t4137" → "B - 4137"
+        val = re.sub(r'\t+', ' ', val).strip()
+        # Loại bỏ prefix A/B - 
+        val = re.sub(r'^[A-Z]\s*[-–]\s*', '', val).strip()
+        # Lấy mã số/chữ đầu tiên có nghĩa
         if val:
-            _set("invoiceNo", val)
+            # Nếu val chứa nhiều phần (ví dụ "4137 1 Số tiếp nhận..."), chỉ lấy phần đầu
+            parts = val.split()
+            clean_val = parts[0] if parts else val
+            _set("invoiceNo", clean_val)
 
     # --- Ngày phát hành hóa đơn ---
     m = re.search(r'Ngày phát hành\s+(\d{1,2}/\d{1,2}/\d{4})', raw_text)
