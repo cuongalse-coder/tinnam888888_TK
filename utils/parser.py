@@ -100,6 +100,46 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": ["số container", "container no", "cont no", "số cont"],
                 "type": "string",
             },
+            "invoiceNo": {
+                "label": "Số Invoice",
+                "keywords": ["invoice no", "số hóa đơn"],
+                "type": "string",
+            },
+            "invoiceDate": {
+                "label": "Ngày Invoice",
+                "keywords": ["invoice date", "ngày hóa đơn"],
+                "type": "date",
+            },
+            "blNo": {
+                "label": "Số Vận đơn (B/L)",
+                "keywords": ["b/l no", "bl no", "số vận đơn"],
+                "type": "string",
+            },
+            "vessel": {
+                "label": "Tàu",
+                "keywords": ["vessel", "tàu"],
+                "type": "string",
+            },
+            "voyage": {
+                "label": "Chuyến",
+                "keywords": ["voyage", "chuyến"],
+                "type": "string",
+            },
+            "pol": {
+                "label": "Cảng xếp (POL)",
+                "keywords": ["pol", "port of loading"],
+                "type": "string",
+            },
+            "pod": {
+                "label": "Cảng dỡ (POD)",
+                "keywords": ["pod", "port of discharge"],
+                "type": "string",
+            },
+            "incoterm": {
+                "label": "Điều kiện giao hàng",
+                "keywords": ["incoterm", "điều kiện"],
+                "type": "string",
+            },
         },
     },
     "booking": {
@@ -255,6 +295,16 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": ["packages", "số kiện", "no of packages"],
                 "type": "number",
             },
+            "freightTerms": {
+                "label": "Điều kiện cước",
+                "keywords": ["freight", "freight prepaid", "freight collect"],
+                "type": "string",
+            },
+            "onBoardDate": {
+                "label": "Ngày On Board",
+                "keywords": ["on board date", "shipped on board"],
+                "type": "date",
+            },
         },
     },
     "invoice": {
@@ -328,6 +378,26 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
                 "keywords": ["origin", "xuất xứ", "country of origin", "made in"],
                 "type": "string",
             },
+            "vessel": {
+                "label": "Tàu",
+                "keywords": ["vessel", "tàu"],
+                "type": "string",
+            },
+            "voyage": {
+                "label": "Chuyến",
+                "keywords": ["voyage", "chuyến"],
+                "type": "string",
+            },
+            "pol": {
+                "label": "Cảng xếp (POL)",
+                "keywords": ["pol", "port of loading"],
+                "type": "string",
+            },
+            "pod": {
+                "label": "Cảng dỡ (POD)",
+                "keywords": ["pod", "port of discharge"],
+                "type": "string",
+            },
         },
     },
     "packing_list": {
@@ -399,6 +469,26 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "containerNo": {
                 "label": "Số container",
                 "keywords": ["container no", "số container", "cont no"],
+                "type": "string",
+            },
+            "vessel": {
+                "label": "Tàu",
+                "keywords": ["vessel", "tàu"],
+                "type": "string",
+            },
+            "voyage": {
+                "label": "Chuyến",
+                "keywords": ["voyage", "chuyến"],
+                "type": "string",
+            },
+            "pol": {
+                "label": "Cảng xếp (POL)",
+                "keywords": ["pol", "port of loading"],
+                "type": "string",
+            },
+            "pod": {
+                "label": "Cảng dỡ (POD)",
+                "keywords": ["pod", "port of discharge"],
                 "type": "string",
             },
         },
@@ -509,14 +599,20 @@ FIELD_MAPPING: list[list[str]] = [
     ],
     ["customs_declaration.value", "invoice.totalAmount"],
     [
-        "booking.vessel", "bill_of_lading.vessel", "arrival_notice.vessel",
+        "customs_declaration.vessel", "booking.vessel", "bill_of_lading.vessel", "arrival_notice.vessel", "invoice.vessel", "packing_list.vessel"
     ],
     [
-        "booking.voyage", "bill_of_lading.voyage", "arrival_notice.voyage",
+        "customs_declaration.voyage", "booking.voyage", "bill_of_lading.voyage", "arrival_notice.voyage", "invoice.voyage", "packing_list.voyage"
     ],
-    ["booking.pol", "bill_of_lading.pol"],
-    ["booking.pod", "bill_of_lading.pod"],
-    ["bill_of_lading.blNo", "arrival_notice.blNo"],
+    [
+        "customs_declaration.pol", "booking.pol", "bill_of_lading.pol", "invoice.pol", "packing_list.pol"
+    ],
+    [
+        "customs_declaration.pod", "booking.pod", "bill_of_lading.pod", "invoice.pod", "packing_list.pod"
+    ],
+    [
+        "customs_declaration.blNo", "bill_of_lading.blNo", "arrival_notice.blNo"
+    ],
     ["bill_of_lading.notifyParty", "arrival_notice.notifyParty"],
     [
         "bill_of_lading.measurement", "packing_list.measurement",
@@ -526,7 +622,9 @@ FIELD_MAPPING: list[list[str]] = [
         "bill_of_lading.packages", "packing_list.packages",
         "arrival_notice.packages",
     ],
-    ["invoice.invoiceNo", "packing_list.invoiceNo"],
+    ["customs_declaration.invoiceNo", "invoice.invoiceNo", "packing_list.invoiceNo"],
+    ["customs_declaration.invoiceDate", "invoice.date"],
+    ["customs_declaration.incoterm", "invoice.incoterm"],
     ["booking.eta", "arrival_notice.eta"],
 ]
 
