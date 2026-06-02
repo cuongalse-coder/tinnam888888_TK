@@ -1,0 +1,60 @@
+<EXP> 1/15
+Tờ khai hàng hóa xuất khẩu (thông quan)
+*305254446030*
+Số tờ khai 305254446030 Số tờ khai đầu tiên - /
+Số tờ khai tạm nhập tái xuất tương ứng
+Mã phân loại kiểm tra 2 Mã loại hình E62 9 Mã số thuế đại diện 4819
+Tên cơ quan Hải quan tiếp nhận tờ khai DNVTNBNINH Mã bộ phận xử lý tờ khai 01
+Ngày đăng ký 30/12/2022 14:46:01 Ngày thay đổi đăng ký / /
+Thời hạn tái nhập/ tái xuất / / -
+Người xuất khẩu
+Mã 4601128890
+Tên Công Ty TNHH Doosun Việt Nam
+Mã bưu chính (+84)43
+Địa chỉ Cụm công nghiệp Nguyên Gon Phường Cải Đan, Thành phố Sông Công, Thái Nguyên
+Số điện thoại 02
+Người ủy thác xuất khẩu
+Mã
+Tên
+Người nhập khẩu
+Mã
+Tên SAMSUNG ELECTRONICS VIETNAM CO., LTD
+Mã bưu chính
+Địa chỉ YEN PHONG I INDUSTRIAL ZONE YEN TRUNG COMMUNE
+YEN PHONG DISTRICT BAC NINH PROVINCE, VIETNAM.
+Mã nước VN
+Đại lý Hải quan Mã nhân viên Hải quan
+Số vận đơn 122200023504775
+Số lượng 1.999 BX
+Tổng trọng lượng hàng (Gross) 10.283,45 KGM
+Địa điểm lưu kho 18B2Z05 CTY DOOSUN VIET NAM
+Địa điểm nhận hàng cuối cùng VNZZZ CONG TY SAMSUNG VIETNAM
+Địa điểm xếp hàng VNZZZ CONG TY DOOSUN VIETNAM
+Phương tiện vận chuyển dự kiến
+Ngày hàng đi dự kiến 30/12/2022
+Ký hiệu và số hiệu PHUONG THUC THANH TOAN THUC TE: TT
+Giấy phép xuất khẩu Số hóa đơn B - 00000228
+1 Số tiếp nhận hóa đơn điện tử
+2 Ngày phát hành 30/12/2022
+3 Phương thức thanh toán KC
+4 Tổng trị giá hóa đơn DAP - USD - 78.246,22 - A
+5 Tổng trị giá tính thuế USD - 78.246,22
+Tỷ giá tính thuế USD - 23.540 -
+Tổng hệ số phân bổ trị giá 78.246,22 -
+Phân loại không cần quy đổi VND Người nộp thuế Mã xác định thời hạn nộp thuế Phân loại nộp thuế A
+Tổng số tiền thuế xuất khẩu Tổng số tiền lệ phí VND
+Số tiền bảo lãnh
+Tổng số trang của tờ khai 15 Tổng số dòng hàng của tờ khai 25
+Số đính kèm khai báo điện tử 1 - 2 - 3 -
+Phần ghi chú Số PXK; IV: 00000228 ngày 30/12/2022
+Số quản lý của nội bộ doanh nghiệp #&XKTC Số quản lý người sử dụng 01095
+Mục thông báo của Hải quan
+Tên trưởng đơn vị Hải quan CCT CC Hải quan Thái Nguyên
+Ngày hoàn thành kiểm tra 30/12/2022 16:05:37 ..........................................
+Ngày cấp phép xuất nhập 30/12/2022 16:05:37
+Thời hạn cho phép vận chuyển bảo thuế (khởi hành) 30/12/2022
+Địa điểm Ngày đến Ngày khởi hành
+Thông tin trung chuyển 1 / / ~ / /
+2 / / ~ / /
+3 / / ~ / /
+Địa điểm đích cho vận chuyển bảo thuế 18BECA1 30/12/2022

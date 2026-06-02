@@ -45,38 +45,75 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "tờ khai hàng hóa xuất khẩu", "export customs declaration", "hải quan xuất khẩu"
         ],
         "fields": {
-            "declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai", "declaration no", "số tk"], "type": "string"},
-            "date": {"label": "Ngày đăng ký", "keywords": ["ngày đăng ký", "date"], "type": "date"},
-            "exporter": {"label": "Người xuất khẩu", "keywords": ["người xuất khẩu", "exporter", "người gửi hàng"], "type": "string"},
-            "importer": {"label": "Người nhập khẩu", "keywords": ["người nhập khẩu", "importer", "người nhận hàng"], "type": "string"},
-            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình", "loại hình"], "type": "string"},
-            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan", "chi cục hải quan"], "type": "string"},
-            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn", "b/l no", "bl no", "số bill"], "type": "string"},
-            "vessel": {"label": "Tên tàu / Phương tiện VC", "keywords": ["phương tiện vận chuyển", "tên tàu", "vessel"], "type": "string"},
-            "pol": {"label": "Cảng xếp hàng (POL)", "keywords": ["địa điểm xếp hàng", "cảng xếp hàng", "pol"], "type": "string"},
-            "pod": {"label": "Cảng dỡ hàng (POD)", "keywords": ["địa điểm dỡ hàng", "cảng dỡ hàng", "pod", "địa điểm nhận hàng cuối cùng"], "type": "string"},
-            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện", "số kiện", "packages"], "type": "number"},
-            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight", "g/w"], "type": "number"},
-            "netWeight": {"label": "Trọng lượng tịnh (N/W)", "keywords": ["trọng lượng tịnh", "net weight", "n/w"], "type": "number"},
-            "invoiceNo": {"label": "Số Hóa đơn (Invoice)", "keywords": ["số hóa đơn", "invoice no", "commercial invoice no"], "type": "string"},
-            "invoiceDate": {"label": "Ngày Hóa đơn", "keywords": ["ngày phát hành", "invoice date", "date of invoice"], "type": "date"},
-            "value": {"label": "Trị giá hóa đơn", "keywords": ["trị giá hóa đơn", "tổng trị giá", "giá trị"], "type": "number"},
-            "currency": {"label": "Mã đồng tiền", "keywords": ["mã đồng tiền", "loại tiền", "currency"], "type": "string"},
-            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán", "thanh toán", "payment method", "điều kiện thanh toán"], "type": "string"},
-            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "điều kiện giá hóa đơn", "incoterm", "term of delivery"], "type": "string"},
-            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã số hàng hóa", "mã hs", "hs code"], "type": "string"},
-            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả hàng hóa", "tên hàng", "description", "hàng hóa"], "type": "string"},
-            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng", "số lượng", "quantity", "qty"], "type": "number"},
-            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá", "unit price"], "type": "number"},
-            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho", "lưu kho", "địa điểm đích"], "type": "string"},
-            "coNo": {"label": "Số C/O", "keywords": ["số c/o", "certificate of origin", "c/o no", "giấy chứng nhận xuất xứ"], "type": "string"},
-            "lcNo": {"label": "Số L/C", "keywords": ["số l/c", "letter of credit", "l/c no", "thư tín dụng"], "type": "string"},
-            "taxAmount": {"label": "Thuế", "keywords": ["tổng tiền thuế", "thuế nhập khẩu", "thuế xuất khẩu", "tax amount", "duty"], "type": "number"},
-            "exchangeRate": {"label": "Tỷ giá", "keywords": ["tỷ giá tính thuế", "tỷ giá", "exchange rate"], "type": "number"},
-            "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển", "cước phí", "freight"], "type": "number"},
-            "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm", "insurance", "bảo hiểm"], "type": "number"},
-            "containerNo": {"label": "Số container", "keywords": ["container no", "số container", "cont no"], "type": "string"},
-            "sealNo": {"label": "Số seal", "keywords": ["seal no", "số seal"], "type": "string"},
+"declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai"], "type": "string"},
+            "firstDeclarationNo": {"label": "Số tờ khai đầu tiên", "keywords": ["số tờ khai đầu tiên"], "type": "string"},
+            "branchDeclarationNo": {"label": "Số nhánh", "keywords": ["số nhánh"], "type": "string"},
+            "tempExportDeclarationNo": {"label": "Số tờ khai tạm nhập tái xuất tương ứng", "keywords": ["số tờ khai tạm nhập tái xuất"], "type": "string"},
+            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình"], "type": "string"},
+            "goodsClassificationCode": {"label": "Mã phân loại hàng hóa", "keywords": ["mã phân loại hàng hóa"], "type": "string"},
+            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan"], "type": "string"},
+            "processingBranchCode": {"label": "Mã bộ phận xử lý tờ khai", "keywords": ["mã bộ phận xử lý"], "type": "string"},
+            "personType": {"label": "Phân loại cá nhân/tổ chức", "keywords": ["phân loại cá nhân"], "type": "string"},
+            "date": {"label": "Ngày đăng ký / khai báo", "keywords": ["ngày đăng ký"], "type": "date"},
+            "reexportDeadline": {"label": "Thời hạn tái xuất/tái nhập", "keywords": ["thời hạn tái xuất"], "type": "string"},
+            "transportMethod": {"label": "Phương thức vận chuyển", "keywords": ["phương thức vận chuyển"], "type": "string"},
+            "exporterCode": {"label": "Mã người xuất khẩu", "keywords": ["mã người xuất khẩu"], "type": "string"},
+            "exporter": {"label": "Tên người xuất khẩu", "keywords": ["người xuất khẩu"], "type": "string"},
+            "exporterZip": {"label": "Mã bưu chính (Người XK)", "keywords": ["mã bưu chính xk"], "type": "string"},
+            "exporterAddress": {"label": "Địa chỉ người xuất khẩu", "keywords": ["địa chỉ người xuất khẩu"], "type": "string"},
+            "exporterPhone": {"label": "Điện thoại (Người XK)", "keywords": ["điện thoại xk"], "type": "string"},
+            "exporterCountry": {"label": "Mã nước (Người XK)", "keywords": ["mã nước xk"], "type": "string"},
+            "importerCode": {"label": "Mã người nhập khẩu", "keywords": ["mã người nhập khẩu"], "type": "string"},
+            "importer": {"label": "Tên người nhập khẩu", "keywords": ["người nhập khẩu"], "type": "string"},
+            "importerZip": {"label": "Mã bưu chính (Người NK)", "keywords": ["mã bưu chính nk"], "type": "string"},
+            "importerAddress": {"label": "Địa chỉ người nhập khẩu", "keywords": ["địa chỉ người nhập khẩu"], "type": "string"},
+            "importerPhone": {"label": "Điện thoại (Người NK)", "keywords": ["điện thoại nk"], "type": "string"},
+            "importerCountry": {"label": "Mã nước (Người NK)", "keywords": ["mã nước nk"], "type": "string"},
+            "entrustedCode": {"label": "Mã người ủy thác", "keywords": ["mã người ủy thác"], "type": "string"},
+            "entrustedName": {"label": "Tên người ủy thác", "keywords": ["tên người ủy thác"], "type": "string"},
+            "customsAgentCode": {"label": "Mã đại lý / NV Hải quan", "keywords": ["mã đại lý"], "type": "string"},
+            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn"], "type": "string"},
+            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện"], "type": "number"},
+            "packageType": {"label": "Loại kiện", "keywords": ["loại kiện"], "type": "string"},
+            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight"], "type": "number"},
+            "grossWeightUnit": {"label": "ĐVT Trọng lượng", "keywords": ["đvt trọng lượng"], "type": "string"},
+            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho"], "type": "string"},
+            "pod": {"label": "Địa điểm nhận hàng cuối cùng (POD)", "keywords": ["địa điểm nhận hàng"], "type": "string"},
+            "pol": {"label": "Địa điểm xếp hàng (POL)", "keywords": ["địa điểm xếp hàng"], "type": "string"},
+            "vessel": {"label": "Phương tiện vận chuyển dự kiến", "keywords": ["phương tiện vận chuyển dự kiến"], "type": "string"},
+            "departureDate": {"label": "Ngày hàng đi dự kiến", "keywords": ["ngày hàng đi"], "type": "date"},
+            "containerNo": {"label": "Số container", "keywords": ["container no"], "type": "string"},
+            "sealNo": {"label": "Số seal", "keywords": ["seal no"], "type": "string"},
+            "netWeight": {"label": "Trọng lượng tịnh (N/W)", "keywords": ["net weight"], "type": "number"},
+            "exportLicense": {"label": "Giấy phép xuất nhập khẩu", "keywords": ["giấy phép xuất khẩu"], "type": "string"},
+            "invoiceNo": {"label": "Số hóa đơn", "keywords": ["số hóa đơn"], "type": "string"},
+            "invoiceDate": {"label": "Ngày phát hành hóa đơn", "keywords": ["ngày phát hành hóa đơn"], "type": "date"},
+            "electronicInvoiceCode": {"label": "Số tiếp nhận hóa đơn điện tử", "keywords": ["số tiếp nhận hóa đơn điện tử"], "type": "string"},
+            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán"], "type": "string"},
+            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "incoterm"], "type": "string"},
+            "currency": {"label": "Mã đồng tiền hóa đơn", "keywords": ["mã đồng tiền"], "type": "string"},
+            "value": {"label": "Tổng trị giá hóa đơn", "keywords": ["trị giá hóa đơn"], "type": "number"},
+            "taxValue": {"label": "Tổng trị giá tính thuế", "keywords": ["trị giá tính thuế"], "type": "number"},
+            "taxCurrency": {"label": "Mã đồng tiền tính thuế", "keywords": ["mã đồng tiền tính thuế"], "type": "string"},
+            "exchangeRate": {"label": "Tỷ giá tính thuế", "keywords": ["tỷ giá tính thuế"], "type": "number"},
+            "taxPaymentMethod": {"label": "Mã xác định thời hạn nộp thuế", "keywords": ["mã xác định thời hạn"], "type": "string"},
+            "taxAmount": {"label": "Tổng tiền thuế xuất/nhập khẩu", "keywords": ["tổng tiền thuế"], "type": "number"},
+            "feeAmount": {"label": "Tổng số tiền lệ phí", "keywords": ["tổng số tiền lệ phí"], "type": "number"},
+            "guaranteeAmount": {"label": "Số tiền bảo lãnh", "keywords": ["số tiền bảo lãnh"], "type": "number"},
+            "internalCode": {"label": "Số quản lý nội bộ doanh nghiệp", "keywords": ["số quản lý nội bộ"], "type": "string"},
+            "totalPages": {"label": "Tổng số trang", "keywords": ["tổng số trang"], "type": "number"},
+            "totalLines": {"label": "Tổng số dòng hàng", "keywords": ["tổng số dòng hàng"], "type": "number"},
+            "coNo": {"label": "Số C/O", "keywords": ["số c/o"], "type": "string"},
+            "lcNo": {"label": "Số L/C", "keywords": ["số l/c"], "type": "string"},
+            "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển"], "type": "number"},
+            "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm"], "type": "number"},
+            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
+            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
+            "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
+            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
+            "uom": {"label": "ĐVT", "keywords": ["đvt"], "type": "string"},
+            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá"], "type": "number"},
+            "itemValue": {"label": "Trị giá", "keywords": ["trị giá mặt hàng"], "type": "number"},
         },
     },
     "customs_declaration_import": {
@@ -86,38 +123,75 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "tờ khai hàng hóa nhập khẩu", "import customs declaration", "hải quan nhập khẩu"
         ],
         "fields": {
-            "declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai", "declaration no", "số tk"], "type": "string"},
-            "date": {"label": "Ngày đăng ký", "keywords": ["ngày đăng ký", "date"], "type": "date"},
-            "exporter": {"label": "Người xuất khẩu", "keywords": ["người xuất khẩu", "exporter", "người gửi hàng"], "type": "string"},
-            "importer": {"label": "Người nhập khẩu", "keywords": ["người nhập khẩu", "importer", "người nhận hàng"], "type": "string"},
-            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình", "loại hình"], "type": "string"},
-            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan", "chi cục hải quan"], "type": "string"},
-            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn", "b/l no", "bl no", "số bill"], "type": "string"},
-            "vessel": {"label": "Tên tàu / Phương tiện VC", "keywords": ["phương tiện vận chuyển", "tên tàu", "vessel"], "type": "string"},
-            "pol": {"label": "Cảng xếp hàng (POL)", "keywords": ["địa điểm xếp hàng", "cảng xếp hàng", "pol"], "type": "string"},
-            "pod": {"label": "Cảng dỡ hàng (POD)", "keywords": ["địa điểm dỡ hàng", "cảng dỡ hàng", "pod", "địa điểm nhận hàng cuối cùng"], "type": "string"},
-            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện", "số kiện", "packages"], "type": "number"},
-            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight", "g/w"], "type": "number"},
-            "netWeight": {"label": "Trọng lượng tịnh (N/W)", "keywords": ["trọng lượng tịnh", "net weight", "n/w"], "type": "number"},
-            "invoiceNo": {"label": "Số Hóa đơn (Invoice)", "keywords": ["số hóa đơn", "invoice no", "commercial invoice no"], "type": "string"},
-            "invoiceDate": {"label": "Ngày Hóa đơn", "keywords": ["ngày phát hành", "invoice date", "date of invoice"], "type": "date"},
-            "value": {"label": "Trị giá hóa đơn", "keywords": ["trị giá hóa đơn", "tổng trị giá", "giá trị"], "type": "number"},
-            "currency": {"label": "Mã đồng tiền", "keywords": ["mã đồng tiền", "loại tiền", "currency"], "type": "string"},
-            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán", "thanh toán", "payment method", "điều kiện thanh toán"], "type": "string"},
-            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "điều kiện giá hóa đơn", "incoterm", "term of delivery"], "type": "string"},
-            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã số hàng hóa", "mã hs", "hs code"], "type": "string"},
-            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả hàng hóa", "tên hàng", "description", "hàng hóa"], "type": "string"},
-            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng", "số lượng", "quantity", "qty"], "type": "number"},
-            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá", "unit price"], "type": "number"},
-            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho", "lưu kho", "địa điểm đích"], "type": "string"},
-            "coNo": {"label": "Số C/O", "keywords": ["số c/o", "certificate of origin", "c/o no", "giấy chứng nhận xuất xứ"], "type": "string"},
-            "lcNo": {"label": "Số L/C", "keywords": ["số l/c", "letter of credit", "l/c no", "thư tín dụng"], "type": "string"},
-            "taxAmount": {"label": "Thuế", "keywords": ["tổng tiền thuế", "thuế nhập khẩu", "thuế xuất khẩu", "tax amount", "duty"], "type": "number"},
-            "exchangeRate": {"label": "Tỷ giá", "keywords": ["tỷ giá tính thuế", "tỷ giá", "exchange rate"], "type": "number"},
-            "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển", "cước phí", "freight"], "type": "number"},
-            "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm", "insurance", "bảo hiểm"], "type": "number"},
-            "containerNo": {"label": "Số container", "keywords": ["container no", "số container", "cont no"], "type": "string"},
-            "sealNo": {"label": "Số seal", "keywords": ["seal no", "số seal"], "type": "string"},
+"declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai"], "type": "string"},
+            "firstDeclarationNo": {"label": "Số tờ khai đầu tiên", "keywords": ["số tờ khai đầu tiên"], "type": "string"},
+            "branchDeclarationNo": {"label": "Số nhánh", "keywords": ["số nhánh"], "type": "string"},
+            "tempExportDeclarationNo": {"label": "Số tờ khai tạm nhập tái xuất tương ứng", "keywords": ["số tờ khai tạm nhập tái xuất"], "type": "string"},
+            "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình"], "type": "string"},
+            "goodsClassificationCode": {"label": "Mã phân loại hàng hóa", "keywords": ["mã phân loại hàng hóa"], "type": "string"},
+            "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan"], "type": "string"},
+            "processingBranchCode": {"label": "Mã bộ phận xử lý tờ khai", "keywords": ["mã bộ phận xử lý"], "type": "string"},
+            "personType": {"label": "Phân loại cá nhân/tổ chức", "keywords": ["phân loại cá nhân"], "type": "string"},
+            "date": {"label": "Ngày đăng ký / khai báo", "keywords": ["ngày đăng ký"], "type": "date"},
+            "reexportDeadline": {"label": "Thời hạn tái xuất/tái nhập", "keywords": ["thời hạn tái xuất"], "type": "string"},
+            "transportMethod": {"label": "Phương thức vận chuyển", "keywords": ["phương thức vận chuyển"], "type": "string"},
+            "exporterCode": {"label": "Mã người xuất khẩu", "keywords": ["mã người xuất khẩu"], "type": "string"},
+            "exporter": {"label": "Tên người xuất khẩu", "keywords": ["người xuất khẩu"], "type": "string"},
+            "exporterZip": {"label": "Mã bưu chính (Người XK)", "keywords": ["mã bưu chính xk"], "type": "string"},
+            "exporterAddress": {"label": "Địa chỉ người xuất khẩu", "keywords": ["địa chỉ người xuất khẩu"], "type": "string"},
+            "exporterPhone": {"label": "Điện thoại (Người XK)", "keywords": ["điện thoại xk"], "type": "string"},
+            "exporterCountry": {"label": "Mã nước (Người XK)", "keywords": ["mã nước xk"], "type": "string"},
+            "importerCode": {"label": "Mã người nhập khẩu", "keywords": ["mã người nhập khẩu"], "type": "string"},
+            "importer": {"label": "Tên người nhập khẩu", "keywords": ["người nhập khẩu"], "type": "string"},
+            "importerZip": {"label": "Mã bưu chính (Người NK)", "keywords": ["mã bưu chính nk"], "type": "string"},
+            "importerAddress": {"label": "Địa chỉ người nhập khẩu", "keywords": ["địa chỉ người nhập khẩu"], "type": "string"},
+            "importerPhone": {"label": "Điện thoại (Người NK)", "keywords": ["điện thoại nk"], "type": "string"},
+            "importerCountry": {"label": "Mã nước (Người NK)", "keywords": ["mã nước nk"], "type": "string"},
+            "entrustedCode": {"label": "Mã người ủy thác", "keywords": ["mã người ủy thác"], "type": "string"},
+            "entrustedName": {"label": "Tên người ủy thác", "keywords": ["tên người ủy thác"], "type": "string"},
+            "customsAgentCode": {"label": "Mã đại lý / NV Hải quan", "keywords": ["mã đại lý"], "type": "string"},
+            "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn"], "type": "string"},
+            "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện"], "type": "number"},
+            "packageType": {"label": "Loại kiện", "keywords": ["loại kiện"], "type": "string"},
+            "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight"], "type": "number"},
+            "grossWeightUnit": {"label": "ĐVT Trọng lượng", "keywords": ["đvt trọng lượng"], "type": "string"},
+            "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho"], "type": "string"},
+            "pod": {"label": "Địa điểm nhận hàng cuối cùng (POD)", "keywords": ["địa điểm nhận hàng"], "type": "string"},
+            "pol": {"label": "Địa điểm xếp hàng (POL)", "keywords": ["địa điểm xếp hàng"], "type": "string"},
+            "vessel": {"label": "Phương tiện vận chuyển dự kiến", "keywords": ["phương tiện vận chuyển dự kiến"], "type": "string"},
+            "departureDate": {"label": "Ngày hàng đi dự kiến", "keywords": ["ngày hàng đi"], "type": "date"},
+            "containerNo": {"label": "Số container", "keywords": ["container no"], "type": "string"},
+            "sealNo": {"label": "Số seal", "keywords": ["seal no"], "type": "string"},
+            "netWeight": {"label": "Trọng lượng tịnh (N/W)", "keywords": ["net weight"], "type": "number"},
+            "exportLicense": {"label": "Giấy phép xuất nhập khẩu", "keywords": ["giấy phép xuất khẩu"], "type": "string"},
+            "invoiceNo": {"label": "Số hóa đơn", "keywords": ["số hóa đơn"], "type": "string"},
+            "invoiceDate": {"label": "Ngày phát hành hóa đơn", "keywords": ["ngày phát hành hóa đơn"], "type": "date"},
+            "electronicInvoiceCode": {"label": "Số tiếp nhận hóa đơn điện tử", "keywords": ["số tiếp nhận hóa đơn điện tử"], "type": "string"},
+            "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán"], "type": "string"},
+            "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "incoterm"], "type": "string"},
+            "currency": {"label": "Mã đồng tiền hóa đơn", "keywords": ["mã đồng tiền"], "type": "string"},
+            "value": {"label": "Tổng trị giá hóa đơn", "keywords": ["trị giá hóa đơn"], "type": "number"},
+            "taxValue": {"label": "Tổng trị giá tính thuế", "keywords": ["trị giá tính thuế"], "type": "number"},
+            "taxCurrency": {"label": "Mã đồng tiền tính thuế", "keywords": ["mã đồng tiền tính thuế"], "type": "string"},
+            "exchangeRate": {"label": "Tỷ giá tính thuế", "keywords": ["tỷ giá tính thuế"], "type": "number"},
+            "taxPaymentMethod": {"label": "Mã xác định thời hạn nộp thuế", "keywords": ["mã xác định thời hạn"], "type": "string"},
+            "taxAmount": {"label": "Tổng tiền thuế xuất/nhập khẩu", "keywords": ["tổng tiền thuế"], "type": "number"},
+            "feeAmount": {"label": "Tổng số tiền lệ phí", "keywords": ["tổng số tiền lệ phí"], "type": "number"},
+            "guaranteeAmount": {"label": "Số tiền bảo lãnh", "keywords": ["số tiền bảo lãnh"], "type": "number"},
+            "internalCode": {"label": "Số quản lý nội bộ doanh nghiệp", "keywords": ["số quản lý nội bộ"], "type": "string"},
+            "totalPages": {"label": "Tổng số trang", "keywords": ["tổng số trang"], "type": "number"},
+            "totalLines": {"label": "Tổng số dòng hàng", "keywords": ["tổng số dòng hàng"], "type": "number"},
+            "coNo": {"label": "Số C/O", "keywords": ["số c/o"], "type": "string"},
+            "lcNo": {"label": "Số L/C", "keywords": ["số l/c"], "type": "string"},
+            "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển"], "type": "number"},
+            "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm"], "type": "number"},
+            "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
+            "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
+            "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
+            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
+            "uom": {"label": "ĐVT", "keywords": ["đvt"], "type": "string"},
+            "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá"], "type": "number"},
+            "itemValue": {"label": "Trị giá", "keywords": ["trị giá mặt hàng"], "type": "number"},
         },
     },
     "booking": {
@@ -2853,29 +2927,7 @@ def ai_parse_fields(
     doc_type: str,
     api_key: str,
 ) -> dict[str, dict[str, Any]]:
-    """Trích xuất giá trị các trường bằng AI (Google Gemini) + Hybrid merge với regex.
-
-    Phase 5 improvements:
-    - Prompt chi tiết hơn với hướng dẫn edge cases
-    - Confidence 0.90 thay vì 0.99
-    - Hybrid merge: AI + regex kết hợp
-    - Better response parsing
-
-    Parameters
-    ----------
-    raw_text : str
-        Nội dung văn bản thô.
-    doc_type : str
-        Mã loại chứng từ (key trong ``DOCUMENT_TYPES``).
-    api_key : str
-        Google Gemini API Key.
-
-    Returns
-    -------
-    dict
-        ``{field_key: {'value': str, 'confidence': float, 'label': str}}``.
-    """
-    # Luôn chạy regex parser trước (làm baseline)
+    """Trích xuất giá trị các trường bằng AI (Google Gemini) + Hybrid merge với regex."""
     regex_results = parse_fields(raw_text, doc_type)
 
     if not api_key:
@@ -2885,6 +2937,109 @@ def ai_parse_fields(
         return regex_results
 
     fields_def = DOCUMENT_TYPES[doc_type]["fields"]
+    
+    schema_hint = {}
+    for key, fdef in fields_def.items():
+        schema_hint[key] = f"{fdef['label']} (type: {fdef['type']})"
+        
+    prompt = f"""Bạn là một AI chuyên gia đọc hiểu chứng từ xuất nhập khẩu quốc tế.
+Nhiệm vụ: Phân tích văn bản chứng từ dưới đây và trích xuất thông tin theo định dạng JSON.
+
+LOẠI CHỨNG TỪ: {DOCUMENT_TYPES[doc_type]['name']}
+CÁC TRƯỜNG CẦN TÌM:
+{json.dumps(schema_hint, ensure_ascii=False, indent=2)}
+
+QUY TẮC QUAN TRỌNG:
+1. Trường number (số lượng, trị giá, trọng lượng): Trả về con số thực không có dấu phẩy (VD: 1234.56, không phải 1,234.56).
+2. Trường date: Trả về chuẩn YYYY-MM-DD. Ưu tiên DD/MM/YYYY cho tài liệu tiếng Việt.
+3. Nếu hoàn toàn không thấy dữ liệu cho một trường, trả về null.
+4. Container number format: 4 chữ + 7 số (VD: HDMU1234567). Nếu có nhiều, phân cách bằng dấu phẩy.
+5. HS Code: loại bỏ dấu chấm, trả về dạng liền (VD: "8473.30.90" → "84733090").
+6. Tờ khai Hải quan thường có danh sách nhiều mặt hàng. ĐỐI VỚI CÁC TRƯỜNG THUỘC VỀ DANH SÁCH MẶT HÀNG (hsCode, description, origin, quantity, uom, unitPrice, itemValue): Hãy trả về dưới dạng mảng (array) các object (ví dụ: "items": [ {{"hsCode": "...", "description": "..."}}, {{"hsCode": "...", ...}} ]). Các trường chung khác vẫn nằm ở root JSON.
+7. Nếu shipper/consignee có địa chỉ nhiều dòng, cố gắng phân tách Tên và Địa chỉ vào đúng trường tương ứng.
+8. Incoterm chỉ trả về mã viết tắt: FOB, CIF, EXW, FCA, CPT, CIP, DAP, DPU, DDP, FAS, CFR, DAT.
+9. Payment method: T/T, L/C, D/P, D/A, CASH, O/A, etc.
+10. Với văn bản OCR lộn xộn: cố gắng ghép lại từ bị tách, bỏ qua ký tự rác.
+11. Chỉ output DUY NHẤT một cục JSON hợp lệ, tuyệt đối không bình luận thêm.
+
+VÍ DỤ OUTPUT:
+{{"invoiceNo": "INV-2024-001", "date": "2024-01-15", "totalAmount": 50000.00, "currency": "USD", "items": [{{"description": "LAPTOP", "quantity": 10}}]}}
+
+--- BẮT ĐẦU VĂN BẢN CHỨNG TỪ ---
+{raw_text[:20000]}
+--- KẾT THÚC VĂN BẢN CHỨNG TỪ ---
+"""
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        
+        resp_text = response.text.strip()
+        resp_text = re.sub(r'^```(?:json)?\s*\n?', '', resp_text)
+        resp_text = re.sub(r'\n?```\s*$', '', resp_text)
+            
+        ai_data = json.loads(resp_text.strip())
+        
+        ai_results: dict[str, dict[str, Any]] = {}
+        
+        item_fields = ["hsCode", "description", "origin", "quantity", "uom", "unitPrice", "itemValue"]
+        
+        for field_key, field_def in fields_def.items():
+            if field_key in item_fields:
+                continue
+                
+            val = ai_data.get(field_key)
+            if val is not None and str(val).strip() and str(val).strip().lower() != "null":
+                if field_def["type"] == "number":
+                    try:
+                        parsed_val = str(float(str(val).replace(',', '')))
+                    except (ValueError, TypeError):
+                        parsed_val = str(val)
+                else:
+                    parsed_val = str(val)
+
+                ai_results[field_key] = {
+                    "value": parsed_val,
+                    "confidence": 0.90,
+                    "label": field_def["label"]
+                }
+                
+        items = ai_data.get("items", [])
+        if isinstance(items, list):
+            for i, item in enumerate(items):
+                idx = i + 1
+                for k, v in item.items():
+                    if k in fields_def and k in item_fields and v is not None and str(v).strip() and str(v).strip().lower() != "null":
+                        field_def = fields_def[k]
+                        if field_def["type"] == "number":
+                            try:
+                                parsed_val = str(float(str(v).replace(',', '')))
+                            except (ValueError, TypeError):
+                                parsed_val = str(v)
+                        else:
+                            parsed_val = str(v)
+                        
+                        dynamic_key = f"{k}_{idx}"
+                        ai_results[dynamic_key] = {
+                            "value": parsed_val,
+                            "confidence": 0.95,
+                            "label": f"{field_def['label']} [Hàng {idx}]"
+                        }
+        
+        merged = dict(ai_results)
+        for key, regex_field in regex_results.items():
+            if key not in merged or merged[key]["value"] == "":
+                merged[key] = regex_field
+        
+        return merged
+    except Exception as e:
+        print(f"Lỗi AI parse: {e}")
+        return regex_results
+
+
+def = DOCUMENT_TYPES[doc_type]["fields"]
     
     # Tạo schema hướng dẫn AI
     schema_hint = {}

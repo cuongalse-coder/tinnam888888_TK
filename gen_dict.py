@@ -1,0 +1,94 @@
+import json
+
+_CUSTOMS_FIELDS = {
+    "declarationNo": {"label": "Số tờ khai", "keywords": ["số tờ khai"], "type": "string"},
+    "firstDeclarationNo": {"label": "Số tờ khai đầu tiên", "keywords": ["số tờ khai đầu tiên"], "type": "string"},
+    "branchDeclarationNo": {"label": "Số nhánh", "keywords": ["số nhánh"], "type": "string"},
+    "tempExportDeclarationNo": {"label": "Số tờ khai tạm nhập tái xuất tương ứng", "keywords": ["số tờ khai tạm nhập tái xuất"], "type": "string"},
+    "typeCode": {"label": "Mã loại hình", "keywords": ["mã loại hình"], "type": "string"},
+    "goodsClassificationCode": {"label": "Mã phân loại hàng hóa", "keywords": ["mã phân loại hàng hóa"], "type": "string"},
+    "customsBranch": {"label": "Cơ quan Hải quan", "keywords": ["cơ quan hải quan"], "type": "string"},
+    "processingBranchCode": {"label": "Mã bộ phận xử lý tờ khai", "keywords": ["mã bộ phận xử lý"], "type": "string"},
+    "personType": {"label": "Phân loại cá nhân/tổ chức", "keywords": ["phân loại cá nhân"], "type": "string"},
+    "date": {"label": "Ngày đăng ký / khai báo", "keywords": ["ngày đăng ký"], "type": "date"},
+    "reexportDeadline": {"label": "Thời hạn tái xuất/tái nhập", "keywords": ["thời hạn tái xuất"], "type": "string"},
+    "transportMethod": {"label": "Phương thức vận chuyển", "keywords": ["phương thức vận chuyển"], "type": "string"},
+
+    "exporterCode": {"label": "Mã người xuất khẩu", "keywords": ["mã người xuất khẩu"], "type": "string"},
+    "exporter": {"label": "Tên người xuất khẩu", "keywords": ["người xuất khẩu"], "type": "string"},
+    "exporterZip": {"label": "Mã bưu chính (Người XK)", "keywords": ["mã bưu chính xk"], "type": "string"},
+    "exporterAddress": {"label": "Địa chỉ người xuất khẩu", "keywords": ["địa chỉ người xuất khẩu"], "type": "string"},
+    "exporterPhone": {"label": "Điện thoại (Người XK)", "keywords": ["điện thoại xk"], "type": "string"},
+    "exporterCountry": {"label": "Mã nước (Người XK)", "keywords": ["mã nước xk"], "type": "string"},
+
+    "importerCode": {"label": "Mã người nhập khẩu", "keywords": ["mã người nhập khẩu"], "type": "string"},
+    "importer": {"label": "Tên người nhập khẩu", "keywords": ["người nhập khẩu"], "type": "string"},
+    "importerZip": {"label": "Mã bưu chính (Người NK)", "keywords": ["mã bưu chính nk"], "type": "string"},
+    "importerAddress": {"label": "Địa chỉ người nhập khẩu", "keywords": ["địa chỉ người nhập khẩu"], "type": "string"},
+    "importerPhone": {"label": "Điện thoại (Người NK)", "keywords": ["điện thoại nk"], "type": "string"},
+    "importerCountry": {"label": "Mã nước (Người NK)", "keywords": ["mã nước nk"], "type": "string"},
+
+    "entrustedCode": {"label": "Mã người ủy thác", "keywords": ["mã người ủy thác"], "type": "string"},
+    "entrustedName": {"label": "Tên người ủy thác", "keywords": ["tên người ủy thác"], "type": "string"},
+
+    "customsAgentCode": {"label": "Mã đại lý / NV Hải quan", "keywords": ["mã đại lý"], "type": "string"},
+
+    "blNo": {"label": "Số Vận đơn (B/L)", "keywords": ["số vận đơn"], "type": "string"},
+    "packages": {"label": "Số lượng kiện", "keywords": ["số lượng kiện"], "type": "number"},
+    "packageType": {"label": "Loại kiện", "keywords": ["loại kiện"], "type": "string"},
+    "grossWeight": {"label": "Tổng trọng lượng", "keywords": ["tổng trọng lượng", "gross weight"], "type": "number"},
+    "grossWeightUnit": {"label": "ĐVT Trọng lượng", "keywords": ["đvt trọng lượng"], "type": "string"},
+    "locationOfStorage": {"label": "Địa điểm lưu kho", "keywords": ["địa điểm lưu kho"], "type": "string"},
+    "pod": {"label": "Địa điểm nhận hàng cuối cùng (POD)", "keywords": ["địa điểm nhận hàng"], "type": "string"},
+    "pol": {"label": "Địa điểm xếp hàng (POL)", "keywords": ["địa điểm xếp hàng"], "type": "string"},
+    "vessel": {"label": "Phương tiện vận chuyển dự kiến", "keywords": ["phương tiện vận chuyển dự kiến"], "type": "string"},
+    "departureDate": {"label": "Ngày hàng đi dự kiến", "keywords": ["ngày hàng đi"], "type": "date"},
+    
+    "containerNo": {"label": "Số container", "keywords": ["container no"], "type": "string"},
+    "sealNo": {"label": "Số seal", "keywords": ["seal no"], "type": "string"},
+    "netWeight": {"label": "Trọng lượng tịnh (N/W)", "keywords": ["net weight"], "type": "number"},
+    
+    "exportLicense": {"label": "Giấy phép xuất nhập khẩu", "keywords": ["giấy phép xuất khẩu"], "type": "string"},
+    "invoiceNo": {"label": "Số hóa đơn", "keywords": ["số hóa đơn"], "type": "string"},
+    "invoiceDate": {"label": "Ngày phát hành hóa đơn", "keywords": ["ngày phát hành hóa đơn"], "type": "date"},
+    "electronicInvoiceCode": {"label": "Số tiếp nhận hóa đơn điện tử", "keywords": ["số tiếp nhận hóa đơn điện tử"], "type": "string"},
+    "paymentMethod": {"label": "Phương thức thanh toán", "keywords": ["phương thức thanh toán"], "type": "string"},
+    "incoterm": {"label": "Điều kiện giao hàng", "keywords": ["điều kiện giao hàng", "incoterm"], "type": "string"},
+    "currency": {"label": "Mã đồng tiền hóa đơn", "keywords": ["mã đồng tiền"], "type": "string"},
+    "value": {"label": "Tổng trị giá hóa đơn", "keywords": ["trị giá hóa đơn"], "type": "number"},
+    "taxValue": {"label": "Tổng trị giá tính thuế", "keywords": ["trị giá tính thuế"], "type": "number"},
+    "taxCurrency": {"label": "Mã đồng tiền tính thuế", "keywords": ["mã đồng tiền tính thuế"], "type": "string"},
+    "exchangeRate": {"label": "Tỷ giá tính thuế", "keywords": ["tỷ giá tính thuế"], "type": "number"},
+    
+    "taxPaymentMethod": {"label": "Mã xác định thời hạn nộp thuế", "keywords": ["mã xác định thời hạn"], "type": "string"},
+    "taxAmount": {"label": "Tổng tiền thuế xuất/nhập khẩu", "keywords": ["tổng tiền thuế"], "type": "number"},
+    "feeAmount": {"label": "Tổng số tiền lệ phí", "keywords": ["tổng số tiền lệ phí"], "type": "number"},
+    "guaranteeAmount": {"label": "Số tiền bảo lãnh", "keywords": ["số tiền bảo lãnh"], "type": "number"},
+    
+    "internalCode": {"label": "Số quản lý nội bộ doanh nghiệp", "keywords": ["số quản lý nội bộ"], "type": "string"},
+    "totalPages": {"label": "Tổng số trang", "keywords": ["tổng số trang"], "type": "number"},
+    "totalLines": {"label": "Tổng số dòng hàng", "keywords": ["tổng số dòng hàng"], "type": "number"},
+    "coNo": {"label": "Số C/O", "keywords": ["số c/o"], "type": "string"},
+    "lcNo": {"label": "Số L/C", "keywords": ["số l/c"], "type": "string"},
+    "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển"], "type": "number"},
+    "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm"], "type": "number"},
+    
+    # Cho danh sách mặt hàng (fields chung để có label)
+    "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
+    "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
+    "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
+    "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
+    "uom": {"label": "ĐVT", "keywords": ["đvt"], "type": "string"},
+    "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá"], "type": "number"},
+    "itemValue": {"label": "Trị giá", "keywords": ["trị giá mặt hàng"], "type": "number"}
+}
+
+def format_dict(d, indent=12):
+    s = "{\n"
+    for k, v in d.items():
+        s += " " * indent + f'"{k}": {json.dumps(v, ensure_ascii=False)},\n'
+    s += " " * (indent-4) + "}"
+    return s
+
+with open("gen_dict_out.txt", "w", encoding="utf-8") as f:
+    f.write(format_dict(_CUSTOMS_FIELDS))
