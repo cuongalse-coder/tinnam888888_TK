@@ -655,37 +655,53 @@ def _render_multi_comparison(multi_result, docs):
     df = pd.DataFrame(display_data)
     
     TAB_GROUPS = {
-        "Thông tin chung": [
-            "Số tờ khai", "Ngày đăng ký", "Người xuất khẩu", "Người nhập khẩu", 
-            "Mã loại hình", "Cơ quan Hải quan", "Số Vận đơn (B/L)", 
-            "Tên tàu / Phương tiện VC", "Cảng xếp hàng (POL)", "Cảng dỡ hàng (POD)", 
-            "Số lượng kiện", "Tổng trọng lượng", "Địa điểm lưu kho",
-            "Số container", "Số seal", "Trọng lượng tịnh (N/W)"
-        ],
-        "Thông tin chung 2": [
-            "Số Hóa đơn (Invoice)", "Ngày Hóa đơn", "Trị giá hóa đơn", 
-            "Mã đồng tiền", "Phương thức thanh toán", "Điều kiện giao hàng",
-            "Số C/O", "Số L/C", "Thuế", "Tỷ giá", "Phí vận chuyển", "Phí bảo hiểm"
-        ],
-        "Danh sách hàng": [
-            "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Lượng (Quantity)", "Đơn giá",
-            "Xuất xứ"
-        ]
+        "Thông tin chung": {
+            "Cơ bản": [
+                "Số tờ khai", "Mã loại hình", "Cơ quan Hải quan", "Ngày đăng ký", "Phương thức vận chuyển"
+            ],
+            "Đơn vị xuất nhập khẩu": [
+                "Người nhập khẩu", "Người xuất khẩu"
+            ],
+            "Vận đơn": [
+                "Số Vận đơn (B/L)", "Tên tàu / Phương tiện VC", "Cảng xếp hàng (POL)", 
+                "Cảng dỡ hàng (POD)", "Số lượng kiện", "Tổng trọng lượng", 
+                "Trọng lượng tịnh (N/W)", "Địa điểm lưu kho", "Số container", "Số seal"
+            ]
+        },
+        "Thông tin chung 2": {
+            "Hóa đơn thương mại": [
+                "Số Hóa đơn (Invoice)", "Ngày Hóa đơn", "Mã đồng tiền", 
+                "Trị giá hóa đơn", "Điều kiện giao hàng", "Phương thức thanh toán"
+            ],
+            "Thuế & Phí": [
+                "Thuế", "Tỷ giá", "Phí vận chuyển", "Phí bảo hiểm"
+            ],
+            "Chứng từ khác": [
+                "Số C/O", "Số L/C"
+            ]
+        },
+        "Danh sách hàng": {
+            "Chi tiết mặt hàng": [
+                "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Xuất xứ", "Lượng (Quantity)", "Đơn giá"
+            ]
+        }
     }
     
     tabs = st.tabs(list(TAB_GROUPS.keys()))
     
-    for idx, (tab_name, keywords) in enumerate(TAB_GROUPS.items()):
+    for idx, (tab_name, sections) in enumerate(TAB_GROUPS.items()):
         with tabs[idx]:
-            tab_df = df[df["Tiêu chí ECUS"].isin(keywords)]
-            if not tab_df.empty:
-                styled_df = tab_df.style.apply(highlight_match, axis=1)
-                st.dataframe(styled_df, use_container_width=True, hide_index=True)
-            else:
-                st.info(f"Không có dữ liệu cho phần {tab_name}.")
-                
+            for section_name, keywords in sections.items():
+                tab_df = df[df["Tiêu chí ECUS"].isin(keywords)].copy()
+                if not tab_df.empty:
+                    tab_df["Tiêu chí ECUS"] = pd.Categorical(tab_df["Tiêu chí ECUS"], categories=keywords, ordered=True)
+                    tab_df = tab_df.sort_values("Tiêu chí ECUS")
+                    st.markdown(f"**{section_name}**")
+                    styled_df = tab_df.style.apply(highlight_match, axis=1)
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+            
     # Các trường không thuộc 3 nhóm trên (nếu có)
-    all_known_keys = [k for group in TAB_GROUPS.values() for k in group]
+    all_known_keys = [k for sections in TAB_GROUPS.values() for keywords in sections.values() for k in keywords]
     other_df = df[~df["Tiêu chí ECUS"].isin(all_known_keys)]
     if not other_df.empty:
         with st.expander("📌 Các thông tin khác", expanded=False):
@@ -701,9 +717,12 @@ def _render_multi_comparison(multi_result, docs):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 # Xuất ra nhiều sheet tương ứng
-                for tab_name, keywords in TAB_GROUPS.items():
-                    tab_df = df[df["Tiêu chí ECUS"].isin(keywords)]
+                for tab_name, sections in TAB_GROUPS.items():
+                    tab_keywords = [k for keywords in sections.values() for k in keywords]
+                    tab_df = df[df["Tiêu chí ECUS"].isin(tab_keywords)].copy()
                     if not tab_df.empty:
+                        tab_df["Tiêu chí ECUS"] = pd.Categorical(tab_df["Tiêu chí ECUS"], categories=tab_keywords, ordered=True)
+                        tab_df = tab_df.sort_values("Tiêu chí ECUS")
                         safe_sheet_name = tab_name[:31]
                         tab_df.to_excel(writer, index=False, sheet_name=safe_sheet_name)
                 if not other_df.empty:
