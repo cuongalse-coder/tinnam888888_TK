@@ -10,7 +10,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def ocr_pdf_page(page, api_key: str = "", dpi: int = 200) -> str:
+def ocr_pdf_page(page, api_key: str = "", dpi: int = 200, ocr_languages: list[str] | None = None) -> str:
     """OCR một trang PDF bằng Gemini Vision (ưu tiên) hoặc EasyOCR (local fallback)."""
     try:
         # Chuyển PDF page thành PIL Image
@@ -30,8 +30,30 @@ def ocr_pdf_page(page, api_key: str = "", dpi: int = 200) -> str:
             logger.info("Không có API Key, sử dụng EasyOCR Local Fallback...")
             import easyocr
             import numpy as np
+            
+            # Map Tesseract language codes from Streamlit UI to EasyOCR codes
+            easyocr_langs = []
+            if ocr_languages:
+                for lang in ocr_languages:
+                    if lang == 'vie': easyocr_langs.append('vi')
+                    elif lang == 'eng': easyocr_langs.append('en')
+                    elif lang == 'chi_sim': easyocr_langs.append('ch_sim')
+                    elif lang == 'chi_tra': easyocr_langs.append('ch_tra')
+            
+            if not easyocr_langs:
+                easyocr_langs = ['vi', 'en']
+                
+            # Xử lý xung đột EasyOCR: Không thể mix tiếng Trung và tiếng Việt cùng lúc
+            if 'ch_sim' in easyocr_langs or 'ch_tra' in easyocr_langs:
+                easyocr_langs = [l for l in easyocr_langs if l != 'vi'] # Xóa 'vi' để tránh lỗi ValueError
+                if 'ch_sim' in easyocr_langs and 'ch_tra' in easyocr_langs:
+                    easyocr_langs.remove('ch_tra') # Không thể mix cả 2 loại tiếng Trung
+            
+            if 'en' not in easyocr_langs:
+                easyocr_langs.append('en') # Luôn thêm tiếng Anh để nhận diện số và ký tự Latin
+            
             # Khởi tạo reader lưu model vào ổ E:
-            reader = easyocr.Reader(['vi', 'en'], model_storage_directory='E:/EasyOCR_Models', download_enabled=True)
+            reader = easyocr.Reader(easyocr_langs, model_storage_directory='E:/EasyOCR_Models', download_enabled=True)
             # Chuyển PIL sang numpy array
             img_np = np.array(img)
             result = reader.readtext(img_np, detail=0, paragraph=True)

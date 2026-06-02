@@ -169,6 +169,8 @@ def extract_pdf(file: Any, api_key: str = "") -> dict[str, Any]:
         Đối tượng file PDF.
     api_key : str
         API key Gemini dùng để OCR ảnh scan.
+    ocr_languages : list[str] | None
+        Ngôn ngữ cần nhận dạng cho OCR.
 
     Returns
     -------
@@ -189,7 +191,7 @@ def extract_pdf(file: Any, api_key: str = "") -> dict[str, Any]:
                 if len(text.strip()) < 50:
                     try:
                         from utils.ocr import ocr_pdf_page
-                        ocr_text = ocr_pdf_page(page, api_key)
+                        ocr_text = ocr_pdf_page(page, api_key, ocr_languages=ocr_languages)
                         if len(ocr_text.strip()) > len(text.strip()):
                             text = ocr_text
                             ocr_used = True
@@ -396,7 +398,7 @@ def extract_file(
 
     extractors = {
         "excel": extract_excel,
-        "pdf": lambda f: extract_pdf(f, api_key),
+        "pdf": lambda f: extract_pdf(f, api_key, ocr_languages),
         "image": lambda f: extract_image(f, languages=ocr_languages),
         "word": extract_word,
     }
