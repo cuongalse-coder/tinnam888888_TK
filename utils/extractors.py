@@ -157,7 +157,7 @@ def extract_excel(file: Any) -> dict[str, Any]:
 # PDF
 # ---------------------------------------------------------------------------
 
-def extract_pdf(file: Any, api_key: str = "") -> dict[str, Any]:
+def extract_pdf(file: Any, api_key: str = "", ocr_languages: list[str] | None = None) -> dict[str, Any]:
     """Trích xuất văn bản và bảng từ file PDF.
 
     Tự động fallback sang OCR (Gemini) nếu trang PDF là ảnh scan

@@ -658,7 +658,6 @@ def compare_ecus_centric(docs: list[dict[str, Any]]) -> dict:
         master_val = row[master_doc_id]
         
         if master_val and master_val != "—":
-            from utils.comparator import _normalize_str
             master_norm = _normalize_str(master_val)
             mismatch_found = False
             for doc in docs[1:]:
