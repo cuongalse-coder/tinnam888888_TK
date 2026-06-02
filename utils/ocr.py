@@ -11,45 +11,34 @@ logger = logging.getLogger(__name__)
 
 
 def ocr_pdf_page(page, api_key: str = "", dpi: int = 200) -> str:
-    """OCR một trang PDF (pdfplumber page object) dùng Gemini Vision.
-    
-    Parameters
-    ----------
-    page : pdfplumber.page.Page
-        Trang PDF cần OCR.
-    api_key : str
-        API key Gemini.
-    dpi : int
-        Độ phân giải khi render ảnh (mặc định 200).
-    
-    Returns
-    -------
-    str
-        Text trích xuất từ OCR, hoặc chuỗi rỗng nếu thất bại.
-    """
-    if not api_key:
-        logger.warning("Không có Gemini API Key để thực hiện OCR.")
-        return ""
-
+    """OCR một trang PDF bằng Gemini Vision (ưu tiên) hoặc EasyOCR (local fallback)."""
     try:
-        from google import genai
-        client = genai.Client(api_key=api_key)
-
         # Chuyển PDF page thành PIL Image
         img = page.to_image(resolution=dpi).original
-
-        prompt = "Extract all text from this image exactly as written. Return ONLY the raw text, no markdown formatting. If there is no text, return empty."
         
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[prompt, img],
-        )
-        
-        text = response.text.strip() if response.text else ""
-        return text
-
+        if api_key:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+            prompt = "Extract all text from this image exactly as written. Return ONLY the raw text, no markdown formatting. If there is no text, return empty."
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[prompt, img],
+            )
+            return response.text.strip() if response.text else ""
+        else:
+            # Fallback to local EasyOCR
+            logger.info("Không có API Key, sử dụng EasyOCR Local Fallback...")
+            import easyocr
+            import numpy as np
+            # Khởi tạo reader lưu model vào ổ E:
+            reader = easyocr.Reader(['vi', 'en'], model_storage_directory='E:/EasyOCR_Models', download_enabled=True)
+            # Chuyển PIL sang numpy array
+            img_np = np.array(img)
+            result = reader.readtext(img_np, detail=0, paragraph=True)
+            return "\n".join(result)
+            
     except Exception as e:
-        logger.error("Gemini OCR lỗi: %s", e)
+        logger.error("OCR lỗi: %s", e)
         return ""
 
 
