@@ -56,8 +56,53 @@ def ocr_pdf_page(page, api_key: str = "", dpi: int = 200, ocr_languages: list[st
             reader = easyocr.Reader(easyocr_langs, model_storage_directory='E:/EasyOCR_Models', download_enabled=True)
             # Chuyển PIL sang numpy array
             img_np = np.array(img)
-            result = reader.readtext(img_np, detail=0, paragraph=True)
-            return "\n".join(result)
+            
+            # Sử dụng detail=1 để lấy tọa độ bbox, phục vụ việc giữ nguyên cấu trúc dòng (layout)
+            result = reader.readtext(img_np, detail=1)
+            
+            if not result:
+                return ""
+                
+            # Sắp xếp các bounding box theo tọa độ Y (top-left) từ trên xuống dưới
+            result.sort(key=lambda item: item[0][0][1])
+            
+            lines = []
+            current_line = []
+            current_y = None
+            
+            # Tính toán threshold Y dựa trên chiều cao trung bình của text box (thường khoảng 15-20 pixels)
+            # Thay vì set cứng, dùng 15 pixels làm mặc định
+            y_threshold = 15 
+            
+            for bbox, text, prob in result:
+                y = bbox[0][1]
+                x = bbox[0][0]
+                
+                # Chiều cao của bbox (y2 - y1)
+                h = bbox[2][1] - bbox[0][1]
+                # Dùng một nửa chiều cao làm threshold để xem có cùng dòng hay không
+                dyn_threshold = max(h * 0.5, 10)
+                
+                if current_y is None:
+                    current_y = y
+                    current_line.append((x, text))
+                elif abs(y - current_y) < dyn_threshold:
+                    current_line.append((x, text))
+                    # Cập nhật Y trung bình của dòng
+                    current_y = (current_y * (len(current_line) - 1) + y) / len(current_line)
+                else:
+                    # Sort các text box trong cùng 1 dòng theo tọa độ X từ trái sang phải
+                    current_line.sort(key=lambda item: item[0])
+                    # Nối bằng phím tab để regex của parser.py có thể nhận diện dạng bảng
+                    lines.append("\t".join([item[1] for item in current_line]))
+                    current_line = [(x, text)]
+                    current_y = y
+                    
+            if current_line:
+                current_line.sort(key=lambda item: item[0])
+                lines.append("\t".join([item[1] for item in current_line]))
+                
+            return "\n".join(lines)
             
     except Exception as e:
         logger.error("OCR lỗi: %s", e)
