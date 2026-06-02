@@ -654,14 +654,29 @@ def compare_ecus_centric(docs: list[dict[str, Any]]) -> dict:
             
             row[doc_id] = val_str if val_str else "—"
             
-        if has_value:
-            unique_vals = set(values_to_compare)
-            if len(unique_vals) <= 1:
-                row["Trạng thái"] = "✅ Khớp"
+        master_doc_id = docs[0]["id"]
+        master_val = row[master_doc_id]
+        
+        if master_val and master_val != "—":
+            from utils.comparator import _normalize_str
+            master_norm = _normalize_str(master_val)
+            mismatch_found = False
+            for doc in docs[1:]:
+                other_val = row[doc["id"]]
+                if other_val and other_val != "—":
+                    if _normalize_str(other_val) != master_norm:
+                        mismatch_found = True
+                        break
+            
+            if mismatch_found:
+                row["Trạng thái"] = "❌ Lệch Master"
             else:
-                row["Trạng thái"] = "❌ Sai lệch"
+                row["Trạng thái"] = "✅ Khớp"
         else:
-            row["Trạng thái"] = "➖ Trống"
+            if has_value:
+                 row["Trạng thái"] = "⚠️ Master trống"
+            else:
+                 row["Trạng thái"] = "➖ Trống"
             
         results.append(row)
             

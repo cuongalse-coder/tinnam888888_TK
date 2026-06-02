@@ -583,6 +583,22 @@ def _render_multi_comparison(multi_result, docs):
         st.warning("Không thể tạo bảng đối chiếu ECUS. Vui lòng kiểm tra lại chứng từ tải lên.")
         return
         
+    st.markdown("""
+        <style>
+        /* Tăng kích thước chữ cho bảng và nội dung */
+        .dataframe {
+            font-size: 1.15rem !important;
+        }
+        .streamlit-expanderHeader {
+            font-size: 1.15rem !important;
+        }
+        p, div, span {
+            font-size: 1.05rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+        
     ecus_results = ecus_output["results"]
     ecus_type = ecus_output["type"]
     
@@ -591,26 +607,44 @@ def _render_multi_comparison(multi_result, docs):
     st.markdown(f"Bảng tổng hợp đối chiếu tất cả các chứng từ dựa trên bộ tiêu chí chuẩn của Tờ khai Hải quan {title_suffix}.")
 
     def highlight_match(row):
-        val = row.get('Trạng thái', '')
-        if isinstance(val, pd.Series):
-            val = val.iloc[0] if not val.empty else ''
-        val = str(val)
-        if '✅' in val:
-            return ['background-color: rgba(16,185,129,0.08)'] * len(row)
-        elif '❌' in val:
-            return ['background-color: rgba(239,68,68,0.08)'] * len(row)
-        else:
-            return [''] * len(row)
+        styles = [''] * len(row)
+        # Chỉ mục 0 là "Tiêu chí ECUS", Chỉ mục 1 là Master Document
+        master_col_idx = 1
+        master_val = row.iloc[master_col_idx]
+        
+        from utils.comparator import _normalize_str
+        
+        if pd.isna(master_val) or master_val == "—":
+            return styles
+            
+        master_norm = _normalize_str(str(master_val))
+        
+        for i in range(2, len(row) - 1): # Bỏ qua cột Trạng thái cuối cùng
+            other_val = row.iloc[i]
+            if not pd.isna(other_val) and other_val != "—":
+                other_norm = _normalize_str(str(other_val))
+                if other_norm != master_norm:
+                    styles[i] = 'background-color: rgba(239,68,68,0.3); color: white; font-weight: bold;'
+                else:
+                    styles[i] = 'background-color: rgba(16,185,129,0.1);'
+        
+        # Đánh dấu cột Master
+        styles[master_col_idx] = 'background-color: rgba(59,130,246,0.1); font-weight: bold;'
+        
+        return styles
 
     display_data = []
     
     from utils.parser import DOCUMENT_TYPES
     col_map = {}
-    for doc in docs:
+    for i, doc in enumerate(docs):
         doc_type_info = DOCUMENT_TYPES.get(doc['doc_type'], {})
         icon = doc_type_info.get('icon', '📄')
-        col_map[doc['id']] = f"{icon} {doc['file_name'][:30]}"
-        
+        if i == 0:
+            col_map[doc['id']] = f"🌟 BẢN CHUẨN: {icon} {doc['file_name'][:25]}"
+        else:
+            col_map[doc['id']] = f"{icon} {doc['file_name'][:30]}"
+            
     for row in ecus_results:
         display_row = {"Tiêu chí ECUS": row["Tiêu chí ECUS"]}
         for doc in docs:
