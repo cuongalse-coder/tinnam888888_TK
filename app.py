@@ -189,6 +189,8 @@ def main():
         st.session_state.comparisons = []
     if 'shipments' not in st.session_state:
         st.session_state.shipments = {}
+    if 'uploader_key' not in st.session_state:
+        st.session_state.uploader_key = 0
 
     # ============================================================
     # Sidebar
@@ -241,6 +243,7 @@ def main():
         with st.expander("⚙️ Quản lý dữ liệu"):
             if st.button("🗑️ Xóa tất cả tải lại", type="primary", use_container_width=True, key="clear_all"):
                 st.session_state.documents = []
+                st.session_state.uploader_key += 1  # Đổi key để clear hoàn toàn file_uploader
                 st.success("✅ Đã xóa trắng dữ liệu!")
                 st.rerun()
 
@@ -272,7 +275,7 @@ def main():
             "Kéo thả hoặc chọn file (chọn từ 2 file trở lên để so sánh)",
             type=['xlsx', 'xls', 'csv', 'pdf', 'jpg', 'jpeg', 'png', 'docx'],
             accept_multiple_files=True,
-            key="file_uploader",
+            key=f"file_uploader_{st.session_state.uploader_key}",
         )
 
     if uploaded_files is not None:
@@ -393,16 +396,38 @@ def main():
             st.markdown('<div class="main-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-color: rgba(139, 92, 246, 0.3);"><h1>⚖️ Bảng So Sánh Tự Động</h1><p>Hệ thống tự động soi chiếu chéo dữ liệu giữa tất cả các chứng từ bạn vừa tải lên</p></div>', unsafe_allow_html=True)
             
             docs = st.session_state.documents
-            if len(docs) == 2:
-                with st.spinner("⏳ Đang đối chiếu dữ liệu..."):
-                    result = compare_documents(docs[0], docs[1])
-                _render_comparison_result(result)
-                _render_ai_analyzer_section(result, False, docs)
-            else:
-                with st.spinner("⏳ Đang đối chiếu đa luồng..."):
+            
+            tab_direct, tab_ecus = st.tabs(["⚖️ So sánh Trực tiếp", "🏛️ So sánh chuẩn ECUS"])
+            
+            with tab_direct:
+                if len(docs) == 2:
+                    with st.spinner("⏳ Đang đối chiếu dữ liệu..."):
+                        result = compare_documents(docs[0], docs[1])
+                    _render_comparison_result(result, key_suffix="_direct")
+                    _render_ai_analyzer_section(result, False, docs)
+                else:
+                    st.info("Chế độ 'So sánh trực tiếp' chỉ hiển thị tối ưu khi có chính xác 2 chứng từ.")
+                    
+            with tab_ecus:
+                with st.spinner("⏳ Đang đối chiếu theo chuẩn ECUS..."):
                     multi_result = compare_by_clusters(docs)
                 _render_multi_comparison(multi_result, docs)
-                _render_ai_analyzer_section(multi_result, True, docs)
+                if len(docs) != 2:
+                    _render_ai_analyzer_section(multi_result, True, docs)
+                elif len(docs) == 2:
+                    # Allow AI analyzer for ECUS tab in 2 doc mode too, just with a different key for buttons
+                    st.markdown("---")
+                    st.info("Trợ lý AI sẽ đọc các lỗi sai lệch từ bảng trên và tư vấn rủi ro (Theo chuẩn ECUS).")
+                    if st.button("✨ Bắt đầu Phân tích Lỗi (ECUS)", type="secondary", key="btn_ai_ecus"):
+                        with st.spinner("AI đang phân tích rủi ro..."):
+                            config = {
+                                'ai_mode': st.session_state.get('ai_mode', '⚡ Thuật toán Cứng (Siêu Tốc)'),
+                                'api_key': st.session_state.get('gemini_api_key', ''),
+                                'ollama_host': st.session_state.get('ollama_host', 'http://localhost:11434'),
+                                'ollama_model': st.session_state.get('ollama_model', 'llama3')
+                            }
+                            response = analyze_discrepancies(multi_result, True, config, docs)
+                            st.markdown(response)
         else:
             st.info("👆 Hãy tải thêm ít nhất 1 chứng từ nữa để hệ thống tự động chạy bảng so sánh chéo nhé.")
 
@@ -474,11 +499,11 @@ def _render_comparison_result(result, key_suffix=""):
         df = results_to_dataframe(result)
         
         GROUPS = {
-            "🚢 Nhóm Thông tin Vận tải": ["Tàu", "Chuyến", "Cảng xếp (POL)", "Cảng dỡ (POD)", "B/L No", "Số Vận đơn (B/L)", "Số container", "Số seal", "Loại container", "Ngày On Board"],
+            "🚢 Nhóm Thông tin Vận tải": ["Tàu", "Chuyến", "Cảng xếp (POL)", "Cảng dỡ (POD)", "B/L No", "Số Vận đơn (B/L)", "Số container", "Số seal", "Loại container", "Ngày On Board", "Nơi giao hàng", "Cảng chuyển tải", "Số lượng container"],
             "🏢 Nhóm Thông tin Đối tác": ["Người xuất khẩu", "Người nhập khẩu", "Shipper", "Consignee", "Notify Party", "Người bán", "Người mua", "Bên được thông báo"],
-            "📦 Nhóm Thông tin Hàng hóa": ["Mô tả hàng hóa", "Số lượng", "Trọng lượng", "Trọng lượng tịnh (N/W)", "Trọng lượng cả bì (G/W)", "Thể tích (CBM)", "Thể tích", "Số kiện", "Mã HS", "Đơn vị", "Đơn giá", "Xuất xứ"],
-            "💰 Nhóm Tài chính & Hợp đồng": ["Trị giá", "Tổng giá trị", "Loại tiền", "Điều kiện giao hàng", "Điều kiện cước", "Số Hợp đồng", "Ngày Hợp đồng", "Phương thức thanh toán", "Tổng tiền thuế", "Số Invoice", "Invoice No", "Cước phí", "Số C/O"],
-            "📅 Nhóm Thông tin Chung": ["Số tờ khai", "Ngày đăng ký", "Ngày phát hành", "Ngày", "ETD", "ETA", "Mã loại hình", "Cơ quan Hải quan", "Phương thức vận chuyển", "P/L No", "Booking No"]
+            "📦 Nhóm Thông tin Hàng hóa": ["Mô tả hàng hóa", "Số lượng", "Trọng lượng", "Trọng lượng tịnh (N/W)", "Trọng lượng cả bì (G/W)", "Thể tích (CBM)", "Thể tích", "Số kiện", "Mã HS", "Đơn vị", "Đơn giá", "Xuất xứ", "Tổng trọng lượng"],
+            "💰 Nhóm Tài chính & Hợp đồng": ["Trị giá", "Tổng giá trị", "Loại tiền", "Điều kiện giao hàng", "Điều kiện cước", "Số Hợp đồng", "Ngày Hợp đồng", "Phương thức thanh toán", "Tổng tiền thuế", "Số Invoice", "Invoice No", "Cước phí", "Số C/O", "Số L/C", "Trị giá hóa đơn", "Thuế", "Tỷ giá", "Phí vận chuyển", "Phí bảo hiểm", "Tổng phí"],
+            "📅 Nhóm Thông tin Chung": ["Số tờ khai", "Ngày đăng ký", "Ngày phát hành", "Ngày", "ETD", "ETA", "Mã loại hình", "Cơ quan Hải quan", "Phương thức vận chuyển", "P/L No", "Booking No", "Địa điểm lưu kho", "D/N No", "Truck Bill", "Truck No", "Hạn Free Time", "Loại B/L"]
         }
 
         # Apply styling
@@ -600,14 +625,17 @@ def _render_multi_comparison(multi_result, docs):
             "Số tờ khai", "Ngày đăng ký", "Người xuất khẩu", "Người nhập khẩu", 
             "Mã loại hình", "Cơ quan Hải quan", "Số Vận đơn (B/L)", 
             "Tên tàu / Phương tiện VC", "Cảng xếp hàng (POL)", "Cảng dỡ hàng (POD)", 
-            "Số lượng kiện", "Tổng trọng lượng", "Địa điểm lưu kho"
+            "Số lượng kiện", "Tổng trọng lượng", "Địa điểm lưu kho",
+            "Số container", "Số seal", "Trọng lượng tịnh (N/W)"
         ],
         "Thông tin chung 2": [
             "Số Hóa đơn (Invoice)", "Ngày Hóa đơn", "Trị giá hóa đơn", 
-            "Mã đồng tiền", "Phương thức thanh toán", "Điều kiện giao hàng"
+            "Mã đồng tiền", "Phương thức thanh toán", "Điều kiện giao hàng",
+            "Số C/O", "Số L/C", "Thuế", "Tỷ giá", "Phí vận chuyển", "Phí bảo hiểm"
         ],
         "Danh sách hàng": [
-            "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Lượng (Quantity)", "Đơn giá"
+            "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Lượng (Quantity)", "Đơn giá",
+            "Xuất xứ"
         ]
     }
     

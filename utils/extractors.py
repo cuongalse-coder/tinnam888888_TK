@@ -196,10 +196,26 @@ def extract_pdf(file: Any, api_key: str = "") -> dict[str, Any]:
                     except Exception:
                         pass  # OCR không khả dụng → giữ text gốc
 
+                # Extract tables from this page
+                page_tables = []
+                try:
+                    tables = page.extract_tables()
+                    if tables:
+                        for tbl in tables:
+                            if tbl:
+                                page_tables.append(tbl)
+                                # Convert table to text and append
+                                for row in tbl:
+                                    if row:
+                                        cleaned_row = [str(cell).strip() if cell else '' for cell in row]
+                                        text += '\n' + '\t'.join(cleaned_row)
+                except Exception:
+                    pass  # Table extraction not critical
+
                 pages_data.append({
                     "page_num": idx,
                     "text": text,
-                    "tables": [],
+                    "tables": page_tables,
                 })
 
         raw_text = "\n\n".join(p["text"] for p in pages_data)
@@ -400,7 +416,9 @@ def extract_file(
         # Lọc sạch các từ khóa rác nan, NaN, NaT do lỗi parser của Pandas sinh ra
         if raw_text:
             raw_text = re.sub(r'\b(nan|NaN|NaT|<NA>)\b', '', raw_text, flags=re.IGNORECASE)
-            raw_text = re.sub(r'\s+', ' ', raw_text).strip()
+            raw_text = re.sub(r'[^\S\n]+', ' ', raw_text)  # collapse horizontal whitespace only
+            raw_text = re.sub(r'\n{3,}', '\n\n', raw_text)  # max 2 consecutive newlines
+            raw_text = raw_text.strip()
 
         return {
             "file_type": file_type,
