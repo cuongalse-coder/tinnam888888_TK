@@ -84,10 +84,10 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
                 except Exception:
                     file.seek(0)
                     try:
-                        df = pd.read_csv(file, sep='\t', encoding='utf-16')
+                        df = pd.read_csv(file, sep='\t', encoding='utf-16', names=range(30), on_bad_lines='skip')
                     except Exception:
                         file.seek(0)
-                        df = pd.read_csv(file, sep='\t', encoding='utf-8')
+                        df = pd.read_csv(file, sep='\t', encoding='utf-8', names=range(30), on_bad_lines='skip')
             
         if df.empty:
             return {}
