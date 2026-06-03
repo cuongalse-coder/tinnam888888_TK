@@ -609,6 +609,12 @@ def compare_ecus_centric(docs: list[dict[str, Any]]) -> dict:
     for key, data in DOCUMENT_TYPES.get(ecus_doc_type, {}).get("fields", {}).items():
         ecus_fields[key] = data["label"]
 
+    # Dynamically inject item fields from all docs so they appear in the comparison
+    for d in docs:
+        for k, v in d.get("fields", {}).items():
+            if k.startswith("item_") and k not in ecus_fields:
+                ecus_fields[k] = v.get("label", k)
+
     mapping_lookup: dict[str, list[tuple[str, str]]] = {k: [] for k in ecus_fields.keys()}
     
     for mapping_group in FIELD_MAPPING:
@@ -625,6 +631,18 @@ def compare_ecus_centric(docs: list[dict[str, Any]]) -> dict:
                 parts = f.split(".")
                 if len(parts) == 2:
                     mapping_lookup[primary_ecus_key].append((parts[0], parts[1]))
+
+    # Dynamically patch mapping_lookup for item fields
+    for k in list(ecus_fields.keys()):
+        if k.startswith("item_"):
+            parts = k.split("_", 2)
+            if len(parts) == 3:
+                base_prop = parts[2]
+                for mapping_group in FIELD_MAPPING:
+                    if any(f.endswith(f".{base_prop}") for f in mapping_group):
+                        for f in mapping_group:
+                            other_type, other_prop = f.split(".")
+                            mapping_lookup[k].append((other_type, f"item_{parts[1]}_{other_prop}"))
 
     results = []
     

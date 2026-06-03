@@ -322,9 +322,32 @@ def main():
                 api_key = st.session_state.get("gemini_api_key", "")
                 if is_excel:
                     from utils.excel_parser import parse_excel_fields_directly
-                    fields = parse_excel_fields_directly(file)
+                    from utils.parser import DOCUMENT_TYPES
+                    raw_fields = parse_excel_fields_directly(file)
+                    fields = {}
+                    
+                    if "items" in raw_fields:
+                        items_list = raw_fields.pop("items")
+                        for item_idx, item in enumerate(items_list, 1):
+                            for k, v in item.items():
+                                dyn_key = f"item_{item_idx}_{k}"
+                                label = f"{k} [Hàng {item_idx}]"
+                                for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
+                                    if f_key == k:
+                                        label = f"{f_def['label']} [Hàng {item_idx}]"
+                                        break
+                                fields[dyn_key] = {"value": v, "confidence": 1.0, "label": label}
+                    
+                    for k, v in raw_fields.items():
+                        label = k
+                        for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
+                            if f_key == k:
+                                label = f_def["label"]
+                                break
+                        fields[k] = {"value": v, "confidence": 1.0, "label": label}
+                        
                     # If parse_excel_fields_directly fails to find type, fallback to default detection
-                    if 'type' in fields and 'xuất' in str(fields['type']).lower():
+                    if 'type' in raw_fields and 'xuất' in str(raw_fields['type']).lower():
                         detection['type'] = 'customs_declaration_export'
                         detection['name'] = 'Tờ khai Hàng hóa Xuất khẩu'
                 else:
@@ -373,7 +396,7 @@ def main():
                     if new_type != doc['doc_type']:
                         doc['doc_type'] = new_type
                         api_key = st.session_state.get("gemini_api_key", "")
-                        if doc.get('name', '').lower().endswith(('.xls', '.xlsx', '.csv', '.xlsm')):
+                        if doc.get('file_name', '').lower().endswith(('.xls', '.xlsx', '.csv', '.xlsm')):
                             # Ignore re-parse for Excel as it doesn't use AI and its type is fixed by the file contents
                             pass
                         else:
@@ -613,7 +636,8 @@ def _render_multi_comparison(multi_result, docs):
         "📝 Chọn chứng từ làm BẢN CHUẨN (Tờ khai nháp / Bản gốc để đối chiếu):",
         options=list(doc_options.keys()),
         format_func=lambda x: doc_options[x],
-        index=default_idx
+        index=default_idx,
+        key="master_doc_select"
     )
     
     # Re-order docs so master_doc is first
