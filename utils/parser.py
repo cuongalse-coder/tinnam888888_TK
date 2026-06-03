@@ -2958,7 +2958,7 @@ QUY TẮC QUAN TRỌNG:
 3. Nếu hoàn toàn không thấy dữ liệu cho một trường, trả về null.
 4. Container number format: 4 chữ + 7 số (VD: HDMU1234567). Nếu có nhiều, phân cách bằng dấu phẩy.
 5. HS Code: loại bỏ dấu chấm, trả về dạng liền (VD: "8473.30.90" → "84733090").
-6. Tờ khai Hải quan thường có danh sách nhiều mặt hàng (dài qua nhiều trang). BẮT BUỘC PHẢI LẤY TẤT CẢ CÁC MẶT HÀNG KHÔNG ĐƯỢC BỎ SÓT. ĐỐI VỚI CÁC TRƯỜNG THUỘC VỀ DANH SÁCH MẶT HÀNG (hsCode, description, origin, quantity, uom, unitPrice, itemValue, itemTax): Hãy trả về dưới dạng mảng (array) các object (ví dụ: "items": [ {{"hsCode": "...", "description": "..."}}, {{"hsCode": "...", ...}} ]). Các trường chung khác vẫn nằm ở root JSON.
+6. Tờ khai Hải quan thường có danh sách nhiều mặt hàng (dài qua nhiều trang). BẮT BUỘC PHẢI LẤY TẤT CẢ CÁC MẶT HÀNG KHÔNG ĐƯỢC BỎ SÓT. KHÔNG ĐƯỢC VIẾT TẮT HAY RÚT GỌN DANH SÁCH. ĐỐI VỚI CÁC TRƯỜNG THUỘC VỀ DANH SÁCH MẶT HÀNG (itemCode, hsCode, description, origin, quantity, uom, unitPrice, itemValue, itemTax): Hãy trả về dưới dạng mảng (array) các object (ví dụ: "items": [ {{"itemCode": "...", "hsCode": "...", "description": "..."}}, {{"hsCode": "...", ...}} ]). Các trường chung khác vẫn nằm ở root JSON.
 7. Nếu shipper/consignee có địa chỉ nhiều dòng, cố gắng phân tách Tên và Địa chỉ vào đúng trường tương ứng.
 8. Incoterm chỉ trả về mã viết tắt: FOB, CIF, EXW, FCA, CPT, CIP, DAP, DPU, DDP, FAS, CFR, DAT.
 9. Payment method: T/T, L/C, D/P, D/A, CASH, O/A, etc.
@@ -2982,12 +2982,32 @@ VÍ DỤ OUTPUT:
         resp_text = response.text.strip()
         resp_text = re.sub(r'^```(?:json)?\s*\n?', '', resp_text)
         resp_text = re.sub(r'\n?```\s*$', '', resp_text)
+        resp_text = resp_text.strip()
             
-        ai_data = json.loads(resp_text.strip())
+        try:
+            ai_data = json.loads(resp_text)
+        except json.JSONDecodeError:
+            # Fallback for truncated JSON (usually from long arrays)
+            try:
+                # Find last valid brace/bracket
+                last_brace = resp_text.rfind('}')
+                if last_brace != -1:
+                    repaired = resp_text[:last_brace+1]
+                    try:
+                        ai_data = json.loads(repaired)
+                    except json.JSONDecodeError:
+                        try:
+                            ai_data = json.loads(repaired + ']}')
+                        except json.JSONDecodeError:
+                            ai_data = json.loads(repaired + ']}}')
+                else:
+                    ai_data = {}
+            except Exception:
+                ai_data = {}
         
         ai_results: dict[str, dict[str, Any]] = {}
         
-        item_fields = ["hsCode", "description", "origin", "quantity", "uom", "unitPrice", "itemValue", "itemTax"]
+        item_fields = ["itemCode", "hsCode", "description", "origin", "quantity", "uom", "unitPrice", "itemValue", "itemTax"]
         
         for field_key, field_def in fields_def.items():
             if field_key in item_fields:
