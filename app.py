@@ -320,7 +320,15 @@ def main():
                     continue
 
                 api_key = st.session_state.get("gemini_api_key", "")
-                fields = ai_parse_fields(raw_text, detection['type'], api_key)
+                if is_excel:
+                    from utils.excel_parser import parse_excel_fields_directly
+                    fields = parse_excel_fields_directly(file)
+                    # If parse_excel_fields_directly fails to find type, fallback to default detection
+                    if 'type' in fields and 'xuất' in str(fields['type']).lower():
+                        detection['type'] = 'customs_declaration_export'
+                        detection['name'] = 'Tờ khai Hàng hóa Xuất khẩu'
+                else:
+                    fields = ai_parse_fields(raw_text, detection['type'], api_key)
                 ocr_used = result.get('ocr_used', False)
                 doc = {
                     'id': str(uuid.uuid4()),
@@ -365,7 +373,11 @@ def main():
                     if new_type != doc['doc_type']:
                         doc['doc_type'] = new_type
                         api_key = st.session_state.get("gemini_api_key", "")
-                        doc['fields'] = ai_parse_fields(doc.get('raw_text', ''), new_type, api_key)
+                        if doc.get('name', '').lower().endswith(('.xls', '.xlsx', '.csv', '.xlsm')):
+                            # Ignore re-parse for Excel as it doesn't use AI and its type is fixed by the file contents
+                            pass
+                        else:
+                            doc['fields'] = ai_parse_fields(doc.get('raw_text', ''), new_type, api_key)
                         st.rerun()
                 with col_b:
                     st.write("")
@@ -779,7 +791,14 @@ def _render_multi_comparison(multi_result, docs):
                 clean_kw = re.sub(r'\s*\[Hàng \d+\]\s*', '', str(label))
                 items[item_idx].append((clean_kw, row))
                 
-        for item_idx in sorted(items.keys()):
+        for i, item_idx in enumerate(sorted(items.keys())):
+            if i >= 50:
+                html += f"""
+                <div style="background: #fff3cd; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #ffeeba; color: #856404; font-family: sans-serif;">
+                    <i>⚠️ Tờ khai này có quá nhiều mặt hàng ({len(items)} items). Chỉ hiển thị 50 mặt hàng đầu tiên trên giao diện để tránh treo trình duyệt. Hệ thống vẫn đối chiếu ngầm toàn bộ dữ liệu.</i>
+                </div>
+                """
+                break
             html += f"""
             <div style="background: #f8fafc; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6;">
                 <h5 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-family: sans-serif; font-size: 15px;">📦 Mặt hàng thứ {item_idx}</h5>
