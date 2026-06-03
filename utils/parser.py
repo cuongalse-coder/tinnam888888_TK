@@ -3041,7 +3041,7 @@ VÍ DỤ OUTPUT:
         return regex_results
 
 
-def = DOCUMENT_TYPES[doc_type]["fields"]
+    fields_def = DOCUMENT_TYPES[doc_type]["fields"]
     
     # Tạo schema hướng dẫn AI
     schema_hint = {}
