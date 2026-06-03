@@ -309,9 +309,9 @@ def main():
                 is_excel = file.name.lower().endswith(('.xls', '.xlsx', '.csv', '.xlsm'))
                 if is_excel:
                     if 'nhập' in raw_text.lower():
-                        detection = {"type": "customs_declaration_import", "name": "Tờ khai Hàng hóa Nhập khẩu"}
+                        detection = {"type": "customs_declaration_import", "name": "Tờ khai Hàng hóa Nhập khẩu", "confidence": 1.0, "icon": "📝", "scores": {}}
                     else:
-                        detection = {"type": "customs_declaration_export", "name": "Tờ khai Hàng hóa Xuất khẩu"}
+                        detection = {"type": "customs_declaration_export", "name": "Tờ khai Hàng hóa Xuất khẩu", "confidence": 1.0, "icon": "📝", "scores": {}}
                 else:
                     detection = detect_document_type(raw_text)
                 
