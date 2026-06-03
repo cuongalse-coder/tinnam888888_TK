@@ -577,6 +577,29 @@ def _render_multi_comparison(multi_result, docs):
         st.info("Chưa có chứng từ nào để so sánh.")
         return
 
+    st.markdown("### 🔍 Màn hình Đối chiếu & Khai báo")
+    
+    doc_options = {doc['id']: f"[{doc.get('doc_type', 'Unknown')}] {doc['file_name']}" for doc in docs}
+    
+    # Tìm file có khả năng là Tờ khai nhất để làm mặc định
+    default_idx = 0
+    for idx, doc in enumerate(docs):
+        if "customs_declaration" in doc.get('doc_type', '') or "excel" in doc['file_name'].lower() or "xls" in doc['file_name'].lower():
+            default_idx = idx
+            break
+
+    master_doc_id = st.selectbox(
+        "📝 Chọn chứng từ làm BẢN CHUẨN (Tờ khai nháp / Bản gốc để đối chiếu):",
+        options=list(doc_options.keys()),
+        format_func=lambda x: doc_options[x],
+        index=default_idx
+    )
+    
+    # Re-order docs so master_doc is first
+    master_doc = next(d for d in docs if d['id'] == master_doc_id)
+    other_docs = [d for d in docs if d['id'] != master_doc_id]
+    docs = [master_doc] + other_docs
+
     ecus_output = compare_ecus_centric(docs)
     
     if not ecus_output or not ecus_output.get("results"):
