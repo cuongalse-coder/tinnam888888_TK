@@ -307,50 +307,60 @@ def main():
                 
                 # Force Excel files to be Customs Declarations based on user workflow
                 is_excel = file.name.lower().endswith(('.xls', '.xlsx', '.csv', '.xlsm'))
-                if is_excel:
-                    if 'nhập' in raw_text.lower():
-                        detection = {"type": "customs_declaration_import", "name": "Tờ khai Hàng hóa Nhập khẩu", "confidence": 1.0, "icon": "📝", "scores": {}}
-                    else:
-                        detection = {"type": "customs_declaration_export", "name": "Tờ khai Hàng hóa Xuất khẩu", "confidence": 1.0, "icon": "📝", "scores": {}}
-                else:
-                    detection = detect_document_type(raw_text)
                 
-                if detection['type'] == 'unknown':
-                    discarded_files.append(file.name)
-                    continue
-
                 api_key = st.session_state.get("gemini_api_key", "")
                 if is_excel:
                     from utils.excel_parser import parse_excel_fields_directly
                     from utils.parser import DOCUMENT_TYPES
+                    file.seek(0)
                     raw_fields = parse_excel_fields_directly(file)
-                    fields = {}
                     
-                    if "items" in raw_fields:
-                        items_list = raw_fields.pop("items")
-                        for item_idx, item in enumerate(items_list, 1):
-                            for k, v in item.items():
-                                dyn_key = f"item_{item_idx}_{k}"
-                                label = f"{k} [Hàng {item_idx}]"
-                                for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
-                                    if f_key == k:
-                                        label = f"{f_def['label']} [Hàng {item_idx}]"
-                                        break
-                                fields[dyn_key] = {"value": v, "confidence": 1.0, "label": label}
-                    
-                    for k, v in raw_fields.items():
-                        label = k
-                        for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
-                            if f_key == k:
-                                label = f_def["label"]
-                                break
-                        fields[k] = {"value": v, "confidence": 1.0, "label": label}
-                        
-                    # If parse_excel_fields_directly fails to find type, fallback to default detection
-                    if 'type' in raw_fields and 'xuất' in str(raw_fields['type']).lower():
+                    # 1. Always use AI (or regex fallback) to extract global fields from the raw text
+                    detection = detect_document_type(raw_text)
+                    if detection['type'] == 'unknown':
                         detection['type'] = 'customs_declaration_export'
-                        detection['name'] = 'Tờ khai Hàng hóa Xuất khẩu'
+                        detection['name'] = DOCUMENT_TYPES['customs_declaration_export']['name']
+                    
+                    fields = ai_parse_fields(raw_text, detection['type'], api_key)
+                    
+                    # 2. Merge precise item data from Excel parser
+                    if raw_fields:
+                        if "items" in raw_fields:
+                            items_list = raw_fields.pop("items")
+                            for item_idx, item in enumerate(items_list, 1):
+                                for k, v in item.items():
+                                    dyn_key = f"item_{item_idx}_{k}"
+                                    label = f"{k} [Hàng {item_idx}]"
+                                    for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
+                                        if f_key == k:
+                                            label = f"{f_def['label']} [Hàng {item_idx}]"
+                                            break
+                                    fields[dyn_key] = {"value": v, "confidence": 1.0, "label": label}
+                        
+                        # Merge any global fields found by Excel parser (overrides AI)
+                        for k, v in raw_fields.items():
+                            label = k
+                            for f_key, f_def in DOCUMENT_TYPES["customs_declaration_export"]["fields"].items():
+                                if f_key == k:
+                                    label = f_def["label"]
+                                    break
+                            fields[k] = {"value": v, "confidence": 1.0, "label": label}
+                            
+                        # Override doc type if excel parser found it
+                        if 'type' in raw_fields and 'xuất' in str(raw_fields['type']).lower():
+                            detection['type'] = 'customs_declaration_export'
+                            detection['name'] = 'Tờ khai Hàng hóa Xuất khẩu'
+                    else:
+                        if detection['type'] == 'unknown':
+                            discarded_files.append(file.name)
+                            continue
+                        fields = ai_parse_fields(raw_text, detection['type'], api_key)
+                        
                 else:
+                    detection = detect_document_type(raw_text)
+                    if detection['type'] == 'unknown':
+                        discarded_files.append(file.name)
+                        continue
                     fields = ai_parse_fields(raw_text, detection['type'], api_key)
                 ocr_used = result.get('ocr_used', False)
                 doc = {
@@ -552,6 +562,36 @@ def _render_comparison_result(result, key_suffix=""):
 
         # Apply styling
         def highlight_status(row):
+            if len(st.session_state.documents) > 0:
+                st.markdown("### 🗂️ Chứng từ đã tải")
+                for doc in st.session_state.documents:
+                    icon = DOCUMENT_TYPES.get(doc['doc_type'], {}).get("icon", "📄")
+                    st.markdown(f"{icon} **{doc['file_name']}** ({doc['type_name']})")
+                    field_count = len([f for f in doc['fields'].values() if f.get('value')])
+                    st.caption(f"✓ Đã trích xuất {field_count} trường")
+                
+                if st.button("🗑️ Xóa tất cả", use_container_width=True):
+                    st.session_state.documents = []
+                    st.rerun()
+                    
+                # --- DEBUG EXPORT FEATURE FOR THE USER ---
+                import json
+                debug_data = []
+                for doc in st.session_state.documents:
+                    debug_data.append({
+                        "file_name": doc['file_name'],
+                        "doc_type": doc['doc_type'],
+                        "fields": doc['fields']
+                    })
+                debug_json = json.dumps(debug_data, ensure_ascii=False, indent=2)
+                st.download_button(
+                    "🐛 Xuất dữ liệu Trích xuất (JSON)",
+                    data=debug_json.encode('utf-8'),
+                    file_name="debug_extraction.json",
+                    mime="application/json",
+                    help="Tải file JSON chứa dữ liệu thô đã trích xuất để kiểm tra lỗi",
+                    use_container_width=True
+                )
             status = row.get('Trạng thái', '')
             if isinstance(status, pd.Series):
                 status = status.iloc[0] if not status.empty else ''

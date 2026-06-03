@@ -20,6 +20,27 @@ COLUMN_MAPPINGS = {
     'itemTaxVAT': ['tiền thuế vat', 'thuế vat', 'tiền thuế gtgc']
 }
 
+GLOBAL_FIELD_MAPPINGS = {
+    'declarationNo': ['số tờ khai', 'tờ khai', 'declaration no'],
+    'type': ['mã loại hình', 'loại hình', 'mã lh'],
+    'customsBranch': ['cơ quan hải quan', 'hải quan', 'cơ quan', 'customs'],
+    'registrationDate': ['ngày đăng ký', 'ngày đk', 'reg date', 'ngày'],
+    'exporterName': ['người xuất khẩu', 'exporter', 'người gửi'],
+    'importerName': ['người nhập khẩu', 'importer', 'người nhận'],
+    'blNo': ['số vận đơn', 'vận đơn', 'b/l', 'bill', 'bl'],
+    'vessel': ['tên tàu', 'phương tiện', 'vessel', 'tàu', 'chuyến'],
+    'portOfLoading': ['cảng xếp', 'pol', 'cảng đi'],
+    'portOfDischarge': ['cảng dỡ', 'pod', 'cảng đến'],
+    'grossWeight': ['trọng lượng cả bì', 'gross weight', 'g.w', 'g/w'],
+    'netWeight': ['trọng lượng tịnh', 'net weight', 'n.w', 'n/w'],
+    'packages': ['số lượng kiện', 'kiện', 'packages', 'pkgs'],
+    'invoiceNo': ['số hóa đơn', 'hóa đơn', 'invoice', 'inv'],
+    'invoiceDate': ['ngày hóa đơn', 'inv date'],
+    'invoiceValue': ['trị giá hóa đơn', 'inv value', 'tổng trị giá'],
+    'incoterm': ['điều kiện giao hàng', 'điều kiện', 'incoterm'],
+    'currency': ['mã đồng tiền', 'đồng tiền', 'currency', 'mã đt'],
+}
+
 def clean_column_name(col_name) -> str:
     if not isinstance(col_name, str):
         return ""
@@ -67,13 +88,53 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
             df = pd.read_csv(file)
         else:
             engine = "openpyxl" if ext.endswith('.xlsx') or ext.endswith('.xlsm') else "xlrd"
-            df = pd.read_excel(file, engine=engine)
+            try:
+                df = pd.read_excel(file, engine=engine)
+            except Exception:
+                # Fallback for fake .xls files (e.g. exported from ECUS as HTML or TSV)
+                file.seek(0)
+                try:
+                    dfs = pd.read_html(file)
+                    df = dfs[0] if dfs else pd.DataFrame()
+                except Exception:
+                    file.seek(0)
+                    try:
+                        df = pd.read_csv(file, sep='\t', encoding='utf-16')
+                    except Exception:
+                        file.seek(0)
+                        df = pd.read_csv(file, sep='\t', encoding='utf-8')
             
         if df.empty:
             return {}
             
         header_idx = find_header_row(df)
         
+        result = {}
+        
+        # --- Extract Global Fields from the header section ---
+        for i in range(header_idx):
+            row_vals = [str(x) for x in df.iloc[i].values if pd.notna(x)]
+            for j, cell_val in enumerate(row_vals):
+                lower_cell = cell_val.lower().strip()
+                for field_key, keywords in GLOBAL_FIELD_MAPPINGS.items():
+                    if field_key in result:
+                        continue
+                    for kw in keywords:
+                        if kw in lower_cell:
+                            # If it has a colon inside
+                            if ':' in cell_val:
+                                val = cell_val.split(':', 1)[1].strip()
+                                if val and val not in ['-', '/']:
+                                    result[field_key] = val
+                                    break
+                            # Otherwise, take the next cell
+                            elif j + 1 < len(row_vals):
+                                val = str(row_vals[j+1]).strip()
+                                # Ensure next cell isn't another header (no colon and not a keyword)
+                                if val and val not in ['-', '/'] and ':' not in val:
+                                    result[field_key] = val
+                                    break
+                                    
         # Set the columns and drop preceding rows
         df.columns = [clean_column_name(col) for col in df.iloc[header_idx].values]
         df = df.iloc[header_idx+1:].reset_index(drop=True)
@@ -89,16 +150,6 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
                 if std_field not in mapped_cols:
                     if any(kw in col for kw in keywords):
                         mapped_cols[std_field] = col
-                        
-        result = {}
-        
-        # Extract document-level info from the first row that has data
-        for field in ['declarationNo', 'type', 'date']:
-            if field in mapped_cols:
-                # Find first non-null value
-                valid_vals = df[mapped_cols[field]].dropna()
-                if not valid_vals.empty:
-                    result[field] = str(valid_vals.iloc[0]).strip()
                     
         # Extract items
         items = []
@@ -122,5 +173,7 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
         return result
         
     except Exception as e:
-        print(f"Lỗi đọc Excel trực tiếp: {e}")
+        # Ignore print to avoid UnicodeEncodeError on Windows cp1252 terminal
+        import logging
+        logging.error("Excel parse error: %s", str(e).encode('ascii', 'ignore').decode('ascii'))
         return {}
