@@ -684,70 +684,128 @@ def _render_multi_comparison(multi_result, docs):
         }
     }
     
+    master_col_name = col_map[docs[0]['id']]
+    compare_col_names = [col_map[doc['id']] for doc in docs[1:]] if len(docs) > 1 else []
+    
+    # Custom HTML/CSS Generator for Form UI
+    def generate_form_html(section_name, keywords, df_section):
+        html = f"""
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+            <h4 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-top: 0; font-family: sans-serif;">{section_name}</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; font-family: sans-serif;">
+        """
+        for kw in keywords:
+            row = df_section[df_section["Tiêu chí ECUS"] == kw]
+            if row.empty: continue
+            row = row.iloc[0]
+            
+            master_val = str(row.get(master_col_name, "—"))
+            if master_val.strip() in ["", "nan", "None", "—"]:
+                master_val = ""
+                
+            has_diff = row.get("Trạng thái") == "❌ Lệch"
+            
+            border_color = "#ef4444" if has_diff else "#d1d5db"
+            bg_color = "#fef2f2" if has_diff else "#f9fafb"
+            
+            html += f"""
+            <div style="flex: 1 1 220px; min-width: 220px; display: flex; flex-direction: column;">
+                <label style="font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 4px;">{kw}</label>
+                <div style="border: 1px solid {border_color}; border-radius: 4px; padding: 8px 10px; background: {bg_color}; font-size: 14px; color: #111827; min-height: 38px; word-break: break-word;">
+                    {master_val}
+                </div>
+            """
+            
+            if has_diff:
+                html += f'<div style="font-size: 12px; color: #dc2626; margin-top: 6px; font-weight: 500;">'
+                for cmp_col in compare_col_names:
+                    cmp_val = str(row.get(cmp_col, "—"))
+                    if cmp_val != master_val and cmp_val not in ["", "nan", "None", "—"]:
+                        doc_short = cmp_col.split(" ")[-1]
+                        html += f'<div><span style="font-weight:bold;">{doc_short}:</span> {cmp_val}</div>'
+                html += f'</div>'
+                
+            html += "</div>"
+            
+        html += "</div></div>"
+        return html
+
+    def generate_item_cards_html(keywords, tab_df):
+        html = ""
+        # Find unique item indices
+        import re
+        items = {}
+        for idx, row in tab_df.iterrows():
+            label = row["Tiêu chí ECUS"]
+            m = re.search(r'\[Hàng (\d+)\]', str(label))
+            if m:
+                item_idx = int(m.group(1))
+                if item_idx not in items:
+                    items[item_idx] = []
+                # Clean keyword name
+                clean_kw = re.sub(r'\s*\[Hàng \d+\]\s*', '', str(label))
+                items[item_idx].append((clean_kw, row))
+                
+        for item_idx in sorted(items.keys()):
+            html += f"""
+            <div style="background: #f8fafc; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6;">
+                <h5 style="color: #0f172a; margin-top: 0; margin-bottom: 12px; font-family: sans-serif; font-size: 15px;">📦 Mặt hàng thứ {item_idx}</h5>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; font-family: sans-serif;">
+            """
+            
+            for clean_kw, row in items[item_idx]:
+                master_val = str(row.get(master_col_name, "—"))
+                if master_val.strip() in ["", "nan", "None", "—"]:
+                    master_val = ""
+                    
+                has_diff = row.get("Trạng thái") == "❌ Lệch"
+                border_color = "#ef4444" if has_diff else "#d1d5db"
+                bg_color = "#fef2f2" if has_diff else "#ffffff"
+                
+                # Assign width based on field type
+                flex_basis = "300px" if "Mô tả" in clean_kw else "150px"
+                
+                html += f"""
+                <div style="flex: 1 1 {flex_basis}; min-width: 150px; display: flex; flex-direction: column;">
+                    <label style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px;">{clean_kw}</label>
+                    <div style="border: 1px solid {border_color}; border-radius: 4px; padding: 6px 10px; background: {bg_color}; font-size: 13.5px; color: #1e293b; min-height: 34px; word-break: break-word;">
+                        {master_val}
+                    </div>
+                """
+                
+                if has_diff:
+                    html += f'<div style="font-size: 11px; color: #dc2626; margin-top: 4px;">'
+                    for cmp_col in compare_col_names:
+                        cmp_val = str(row.get(cmp_col, "—"))
+                        if cmp_val != master_val and cmp_val not in ["", "nan", "None", "—"]:
+                            doc_short = cmp_col.split(" ")[-1]
+                            html += f'<div><b>{doc_short}:</b> {cmp_val}</div>'
+                    html += f'</div>'
+                    
+                html += "</div>"
+            html += "</div></div>"
+        return html
+
     tabs = st.tabs(list(TAB_GROUPS.keys()))
     
     for idx, (tab_name, sections) in enumerate(TAB_GROUPS.items()):
         with tabs[idx]:
             for section_name, keywords in sections.items():
                 if tab_name == "Danh sách hàng":
-                    # Lọc bằng .startswith để lấy được "[Hàng 1]", "[Hàng 2]"...
                     mask = df["Tiêu chí ECUS"].apply(lambda x: any(str(x).startswith(kw) for kw in keywords))
                     tab_df = df[mask].copy()
                     
                     if not tab_df.empty:
-                        # Extract item index for sorting
-                        def get_sort_key(label):
-                            import re
-                            m = re.search(r'\[Hàng (\d+)\]', str(label))
-                            item_idx = int(m.group(1)) if m else 0
-                            
-                            # Find which keyword it matches to maintain field order
-                            field_order = 99
-                            for i, kw in enumerate(keywords):
-                                if str(label).startswith(kw):
-                                    field_order = i
-                                    break
-                            return (item_idx, field_order)
-                            
-                        tab_df["_sort_key"] = tab_df["Tiêu chí ECUS"].apply(get_sort_key)
-                        tab_df = tab_df.sort_values("_sort_key").drop(columns=["_sort_key"])
-                        
-                        st.markdown(f"**{section_name}**")
-                        
-                        # Cải thiện UI: màu sắc và size
-                        styled_df = tab_df.style.apply(highlight_match, axis=1)\
-                                          .set_properties(**{
-                                              'font-size': '16px',
-                                              'padding': '12px',
-                                          })
-                        
-                        # Thêm màu nền sọc (nth-child) bằng CSS thông qua set_table_styles
-                        styled_df = styled_df.set_table_styles([
-                            {'selector': 'tr:nth-child(even)', 'props': [('background-color', '#f9fafb')]},
-                            {'selector': 'th', 'props': [('background-color', '#1e3a8a'), ('color', 'white'), ('font-size', '16px')]},
-                            {'selector': 'td', 'props': [('border-bottom', '1px solid #e5e7eb')]}
-                        ])
-                        
-                        st.dataframe(styled_df, use_container_width=True, hide_index=True, height=min(600, len(tab_df)*45 + 40))
+                        html_out = generate_item_cards_html(keywords, tab_df)
+                        if html_out:
+                            st.components.v1.html(html_out, scrolling=True, height=700)
+                        else:
+                            st.info("Chưa lấy được danh sách hàng hóa.")
                 else:
                     tab_df = df[df["Tiêu chí ECUS"].isin(keywords)].copy()
                     if not tab_df.empty:
-                        tab_df["Tiêu chí ECUS"] = pd.Categorical(tab_df["Tiêu chí ECUS"], categories=keywords, ordered=True)
-                        tab_df = tab_df.sort_values("Tiêu chí ECUS")
-                        st.markdown(f"**{section_name}**")
-                        styled_df = tab_df.style.apply(highlight_match, axis=1)\
-                                          .set_properties(**{
-                                              'font-size': '16px',
-                                              'padding': '12px'
-                                          })
-                        
-                        styled_df = styled_df.set_table_styles([
-                            {'selector': 'tr:nth-child(even)', 'props': [('background-color', '#f9fafb')]},
-                            {'selector': 'th', 'props': [('background-color', '#1e3a8a'), ('color', 'white'), ('font-size', '16px')]},
-                            {'selector': 'td', 'props': [('border-bottom', '1px solid #e5e7eb')]}
-                        ])
-                        
-                        st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                        html_out = generate_form_html(section_name, keywords, tab_df)
+                        st.markdown(html_out, unsafe_allow_html=True)
 
     # Các trường không thuộc 3 nhóm trên (nếu có)
     all_known_keys = [k for sections in TAB_GROUPS.values() for keywords in sections.values() for k in keywords]
