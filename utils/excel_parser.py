@@ -1,8 +1,23 @@
 import pandas as pd
 import re
+import unicodedata
 from typing import Dict, Any, List
 
-COLUMN_MAPPINGS = {'declarationNo': ['declaration no', 'so to khai', 'số tờ khai', 'to khai', 'tk', 'tờ khai'], 'type': ['loại hình', 'type', 'loai hinh', 'ma loai hinh', 'mã loại hình'], 'date': ['ngay đang ky', 'ngay đk', 'date', 'ngày đk', 'ngày đăng ký'], 'hsCode': ['customs code', 'mã số hàng hóa', 'ma so hang hoa', 'ma hs', 'hs code', 'mã hs'], 'description': ['mo ta', 'mô tả', 'ten hang', 'ecus name', 'ten tieng viet', 'name ecus', 'tên tiếng việt', 'tên hàng', 'description'], 'origin': ['xuat xu', 'xuất xứ', 'mã nước xuất xứ', 'ma nuoc xuat xu', 'c/o', 'origin'], 'quantity': ['tong so luong', 'số lượng', "q'ty", 'lượng', 'qty', 'luong', 'tổng số lượng', 'so luong', 'quantity'], 'uom': ['đvt', 'unit', 'đon vi tinh', 'uom', 'đơn vị tính'], 'unitPrice': ['đon gia', 'đơn giá tính thuế', 'đơn giá', 'unit price', 'đơn giá hóa đơn', 'đon gia tinh thue', 'đon gia hoa đon'], 'itemValue': ['amount', 'trị giá nguyên tệ', 'trị giá', 'tri gia', 'tri gia nguyen te', 'value', 'tổng trị giá', 'tong tri gia'], 'itemTax': ['thue xnk', 'tiền thuế nhập khẩu', 'import tax', 'tien thue xnk', 'tiền thuế xnk', 'tien thue nhap khau', 'thuế xnk'], 'itemTaxVAT': ['tiền thuế gtgc', 'thuế vat', 'tien thue vat', 'thue vat', 'tien thue gtgc', 'tiền thuế vat']}
+COLUMN_MAPPINGS = {
+    'declarationNo': ['declaration no', 'so to khai', 'số tờ khai', 'to khai', 'tk', 'tờ khai'],
+    'type': ['mã loại hình', 'loại hình', 'type'],
+    'date': ['ngày đăng ký', 'ngày đk', 'date'],
+    'itemCode': ['mã hàng', 'mã phần tử', 'item code', 'part no', 'part number'],
+    'hsCode': ['mã hs', 'hs code', 'customs code', 'mã số hàng hóa'],
+    'description': ['mo ta', 'mô tả', 'ten hang', 'ecus name', 'ten tieng viet', 'name ecus', 'tên tiếng việt', 'tên hàng', 'description'],
+    'origin': ['xuat xu', 'xuất xứ', 'mã nước xuất xứ', 'ma nuoc xuat xu', 'c/o', 'origin'],
+    'quantity': ['tong so luong', 'số lượng', "q'ty", 'lượng', 'qty', 'luong', 'tổng số lượng', 'so luong', 'quantity'],
+    'uom': ['đvt', 'unit', 'đon vi tinh', 'uom', 'đơn vị tính'],
+    'unitPrice': ['đon gia', 'đơn giá tính thuế', 'đơn giá', 'unit price', 'đơn giá hóa đơn', 'đon gia tinh thue', 'đon gia hoa đon'],
+    'itemValue': ['amount', 'trị giá nguyên tệ', 'trị giá', 'tri gia', 'tri gia nguyen te', 'value', 'tổng trị giá', 'tong tri gia'],
+    'itemTax': ['thue xnk', 'tiền thuế nhập khẩu', 'import tax', 'tien thue xnk', 'tiền thuế xnk', 'tien thue nhap khau', 'thuế xnk'],
+    'itemTaxVAT': ['tiền thuế gtgc', 'thuế vat', 'tien thue vat', 'thue vat', 'tien thue gtgc', 'tiền thuế vat']
+}
 
 GLOBAL_FIELD_MAPPINGS = {'declarationNo': ['declaration no', 'so to khai', 'số tờ khai', 'to khai', 'tờ khai'], 'type': ['loại hình', 'loai hinh', 'ma loai hinh', 'mã loại hình', 'mã lh', 'ma lh'], 'customsBranch': ['customs', 'co quan', 'co quan hai quan', 'hai quan', 'hải quan', 'cơ quan hải quan', 'cơ quan'], 'registrationDate': ['ngay đang ky', 'ngay', 'reg date', 'ngay đk', 'ngày đk', 'ngày đăng ký', 'ngày'], 'exporterName': ['nguoi xuat khau', 'người xuất khẩu', 'exporter', 'người gửi', 'nguoi gui'], 'importerName': ['importer', 'nguoi nhap khau', 'người nhập khẩu', 'nguoi nhan', 'người nhận'], 'blNo': ['b/l', 'van đon', 'so van đon', 'bill', 'vận đơn', 'bl', 'số vận đơn'], 'vessel': ['tên tàu', 'tau', 'vessel', 'tàu', 'ten tau', 'phương tiện', 'phuong tien', 'chuyen', 'chuyến'], 'portOfLoading': ['pol', 'cảng đi', 'cang xep', 'cảng xếp', 'cang đi'], 'portOfDischarge': ['cang đen', 'cảng đến', 'cang do', 'pod', 'cảng dỡ'], 'grossWeight': ['trọng lượng cả bì', 'gross weight', 'g.w', 'trong luong ca bi', 'g/w'], 'netWeight': ['trọng lượng tịnh', 'n.w', 'trong luong tinh', 'n/w', 'net weight'], 'packages': ['pkgs', 'so luong kien', 'số lượng kiện', 'kien', 'packages', 'kiện'], 'invoiceNo': ['hóa đơn', 'invoice', 'hoa đon', 'so hoa đon', 'inv', 'số hóa đơn'], 'invoiceDate': ['inv date', 'ngay hoa đon', 'ngày hóa đơn'], 'invoiceValue': ['tri gia hoa đon', 'trị giá hóa đơn', 'inv value', 'tổng trị giá', 'tong tri gia'], 'incoterm': ['đieu kien giao hang', 'incoterm', 'điều kiện', 'điều kiện giao hàng', 'đieu kien'], 'currency': ['mã đồng tiền', 'ma đong tien', 'đong tien', 'mã đt', 'ma đt', 'currency', 'đồng tiền']}
 
@@ -22,17 +37,22 @@ def find_header_row(df: pd.DataFrame) -> int:
         if i > 30:
             break
             
-        row_str = ' '.join(str(x).lower() for x in row.values)
+        # create an unaccented row string for very robust matching
+        row_str_raw = ' '.join(str(x).lower() for x in row.values)
+        row_str = "".join([c for c in unicodedata.normalize('NFKD', row_str_raw) if not unicodedata.combining(c)])
+        
         matches = 0
         
-        # Check for typical headers
-        if 'stt' in row_str or 'số tt' in row_str or 'so tt' in row_str:
+        # Check for typical headers (unaccented)
+        if 'stt' in row_str or 'so tt' in row_str:
             matches += 1
         if 'hs' in row_str or 'customs code' in row_str:
             matches += 1
-        if 'tên hàng' in row_str or 'ten hang' in row_str or 'description' in row_str or 'ecus name' in row_str:
+        if 'ten hang' in row_str or 'description' in row_str or 'ecus name' in row_str:
             matches += 1
-        if 'số lượng' in row_str or 'so luong' in row_str or 'quantity' in row_str or 'q\'ty' in row_str:
+        if 'so luong' in row_str or 'luong' in row_str or 'quantity' in row_str or 'qty' in row_str:
+            matches += 1
+        if 'ma hang' in row_str or 'item code' in row_str or 'part no' in row_str:
             matches += 1
             
         if matches > max_matches:
@@ -121,15 +141,15 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
         for idx, row in df.iterrows():
             item = {}
             has_data = False
-            for field in ['hsCode', 'description', 'origin', 'quantity', 'uom', 'unitPrice', 'itemValue', 'itemTax', 'itemTaxVAT']:
+            for field in ['itemCode', 'hsCode', 'description', 'origin', 'quantity', 'uom', 'unitPrice', 'itemValue', 'itemTax', 'itemTaxVAT']:
                 if field in mapped_cols:
                     val = row[mapped_cols[field]]
                     if pd.notna(val) and str(val).strip():
                         item[field] = str(val).strip()
                         has_data = True
                         
-            # Only add if we found a description or hs code
-            if has_data and ('description' in item or 'hsCode' in item):
+            # Only add if we found a description, hs code, or item code
+            if has_data and ('description' in item or 'hsCode' in item or 'itemCode' in item):
                 items.append(item)
                 
         if items:
