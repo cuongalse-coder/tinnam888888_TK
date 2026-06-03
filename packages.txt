@@ -1,4 +1,2 @@
 tesseract-ocr
 tesseract-ocr-vie
-tesseract-ocr-chi-sim
-tesseract-ocr-chi-tra
