@@ -74,13 +74,19 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
         else:
             engine = "openpyxl" if ext.endswith('.xlsx') or ext.endswith('.xlsm') else "xlrd"
             try:
-                df = pd.read_excel(file, engine=engine)
+                df = pd.read_excel(file, engine=engine, header=None)
             except Exception:
                 # Fallback for fake .xls files (e.g. exported from ECUS as HTML or TSV)
                 file.seek(0)
                 try:
                     dfs = pd.read_html(file)
-                    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+                    new_dfs = []
+                    for d in dfs:
+                        cols_as_row = pd.DataFrame([d.columns.values], columns=d.columns)
+                        d = pd.concat([cols_as_row, d], ignore_index=True)
+                        d.columns = range(d.shape[1])
+                        new_dfs.append(d)
+                    df = pd.concat(new_dfs, ignore_index=True) if new_dfs else pd.DataFrame()
                 except Exception:
                     file.seek(0)
                     try:
