@@ -2,44 +2,9 @@ import pandas as pd
 import re
 from typing import Dict, Any, List
 
-# Các từ khóa thường dùng trong các định dạng Excel khác nhau (Báo cáo chi tiết, file mẫu, file nội bộ)
-COLUMN_MAPPINGS = {
-    'declarationNo': ['số tk', 'số tờ khai', 'tk', 'declaration no'],
-    'type': ['mã loại hình', 'loại hình', 'type'],
-    'date': ['ngày đk', 'ngày đăng ký', 'date'],
-    
-    # Item level
-    'hsCode': ['mã hs', 'hs code', 'customs code', 'mã số hàng hóa'],
-    'description': ['tên hàng', 'mô tả', 'description', 'ecus name', 'name ecus', 'tên tiếng việt'],
-    'origin': ['xuất xứ', 'origin', 'c/o', 'mã nước xuất xứ'],
-    'quantity': ['lượng', 'số lượng', 'tổng số lượng', 'q\'ty', 'quantity', 'qty'],
-    'uom': ['đvt', 'đơn vị tính', 'unit', 'uom'],
-    'unitPrice': ['đơn giá', 'unit price', 'đơn giá hóa đơn', 'đơn giá tính thuế'],
-    'itemValue': ['trị giá', 'tổng trị giá', 'trị giá nguyên tệ', 'amount', 'value'],
-    'itemTax': ['tiền thuế xnk', 'thuế xnk', 'tiền thuế nhập khẩu', 'import tax'],
-    'itemTaxVAT': ['tiền thuế vat', 'thuế vat', 'tiền thuế gtgc']
-}
+COLUMN_MAPPINGS = {'declarationNo': ['declaration no', 'so to khai', 'số tờ khai', 'to khai', 'tk', 'tờ khai'], 'type': ['loại hình', 'type', 'loai hinh', 'ma loai hinh', 'mã loại hình'], 'date': ['ngay đang ky', 'ngay đk', 'date', 'ngày đk', 'ngày đăng ký'], 'hsCode': ['customs code', 'mã số hàng hóa', 'ma so hang hoa', 'ma hs', 'hs code', 'mã hs'], 'description': ['mo ta', 'mô tả', 'ten hang', 'ecus name', 'ten tieng viet', 'name ecus', 'tên tiếng việt', 'tên hàng', 'description'], 'origin': ['xuat xu', 'xuất xứ', 'mã nước xuất xứ', 'ma nuoc xuat xu', 'c/o', 'origin'], 'quantity': ['tong so luong', 'số lượng', "q'ty", 'lượng', 'qty', 'luong', 'tổng số lượng', 'so luong', 'quantity'], 'uom': ['đvt', 'unit', 'đon vi tinh', 'uom', 'đơn vị tính'], 'unitPrice': ['đon gia', 'đơn giá tính thuế', 'đơn giá', 'unit price', 'đơn giá hóa đơn', 'đon gia tinh thue', 'đon gia hoa đon'], 'itemValue': ['amount', 'trị giá nguyên tệ', 'trị giá', 'tri gia', 'tri gia nguyen te', 'value', 'tổng trị giá', 'tong tri gia'], 'itemTax': ['thue xnk', 'tiền thuế nhập khẩu', 'import tax', 'tien thue xnk', 'tiền thuế xnk', 'tien thue nhap khau', 'thuế xnk'], 'itemTaxVAT': ['tiền thuế gtgc', 'thuế vat', 'tien thue vat', 'thue vat', 'tien thue gtgc', 'tiền thuế vat']}
 
-GLOBAL_FIELD_MAPPINGS = {
-    'declarationNo': ['số tờ khai', 'tờ khai', 'declaration no'],
-    'type': ['mã loại hình', 'loại hình', 'mã lh'],
-    'customsBranch': ['cơ quan hải quan', 'hải quan', 'cơ quan', 'customs'],
-    'registrationDate': ['ngày đăng ký', 'ngày đk', 'reg date', 'ngày'],
-    'exporterName': ['người xuất khẩu', 'exporter', 'người gửi'],
-    'importerName': ['người nhập khẩu', 'importer', 'người nhận'],
-    'blNo': ['số vận đơn', 'vận đơn', 'b/l', 'bill', 'bl'],
-    'vessel': ['tên tàu', 'phương tiện', 'vessel', 'tàu', 'chuyến'],
-    'portOfLoading': ['cảng xếp', 'pol', 'cảng đi'],
-    'portOfDischarge': ['cảng dỡ', 'pod', 'cảng đến'],
-    'grossWeight': ['trọng lượng cả bì', 'gross weight', 'g.w', 'g/w'],
-    'netWeight': ['trọng lượng tịnh', 'net weight', 'n.w', 'n/w'],
-    'packages': ['số lượng kiện', 'kiện', 'packages', 'pkgs'],
-    'invoiceNo': ['số hóa đơn', 'hóa đơn', 'invoice', 'inv'],
-    'invoiceDate': ['ngày hóa đơn', 'inv date'],
-    'invoiceValue': ['trị giá hóa đơn', 'inv value', 'tổng trị giá'],
-    'incoterm': ['điều kiện giao hàng', 'điều kiện', 'incoterm'],
-    'currency': ['mã đồng tiền', 'đồng tiền', 'currency', 'mã đt'],
-}
+GLOBAL_FIELD_MAPPINGS = {'declarationNo': ['declaration no', 'so to khai', 'số tờ khai', 'to khai', 'tờ khai'], 'type': ['loại hình', 'loai hinh', 'ma loai hinh', 'mã loại hình', 'mã lh', 'ma lh'], 'customsBranch': ['customs', 'co quan', 'co quan hai quan', 'hai quan', 'hải quan', 'cơ quan hải quan', 'cơ quan'], 'registrationDate': ['ngay đang ky', 'ngay', 'reg date', 'ngay đk', 'ngày đk', 'ngày đăng ký', 'ngày'], 'exporterName': ['nguoi xuat khau', 'người xuất khẩu', 'exporter', 'người gửi', 'nguoi gui'], 'importerName': ['importer', 'nguoi nhap khau', 'người nhập khẩu', 'nguoi nhan', 'người nhận'], 'blNo': ['b/l', 'van đon', 'so van đon', 'bill', 'vận đơn', 'bl', 'số vận đơn'], 'vessel': ['tên tàu', 'tau', 'vessel', 'tàu', 'ten tau', 'phương tiện', 'phuong tien', 'chuyen', 'chuyến'], 'portOfLoading': ['pol', 'cảng đi', 'cang xep', 'cảng xếp', 'cang đi'], 'portOfDischarge': ['cang đen', 'cảng đến', 'cang do', 'pod', 'cảng dỡ'], 'grossWeight': ['trọng lượng cả bì', 'gross weight', 'g.w', 'trong luong ca bi', 'g/w'], 'netWeight': ['trọng lượng tịnh', 'n.w', 'trong luong tinh', 'n/w', 'net weight'], 'packages': ['pkgs', 'so luong kien', 'số lượng kiện', 'kien', 'packages', 'kiện'], 'invoiceNo': ['hóa đơn', 'invoice', 'hoa đon', 'so hoa đon', 'inv', 'số hóa đơn'], 'invoiceDate': ['inv date', 'ngay hoa đon', 'ngày hóa đơn'], 'invoiceValue': ['tri gia hoa đon', 'trị giá hóa đơn', 'inv value', 'tổng trị giá', 'tong tri gia'], 'incoterm': ['đieu kien giao hang', 'incoterm', 'điều kiện', 'điều kiện giao hàng', 'đieu kien'], 'currency': ['mã đồng tiền', 'ma đong tien', 'đong tien', 'mã đt', 'ma đt', 'currency', 'đồng tiền']}
 
 def clean_column_name(col_name) -> str:
     if not isinstance(col_name, str):
@@ -61,13 +26,13 @@ def find_header_row(df: pd.DataFrame) -> int:
         matches = 0
         
         # Check for typical headers
-        if 'stt' in row_str or 'số tt' in row_str:
+        if 'stt' in row_str or 'số tt' in row_str or 'so tt' in row_str:
             matches += 1
         if 'hs' in row_str or 'customs code' in row_str:
             matches += 1
-        if 'tên hàng' in row_str or 'description' in row_str or 'ecus name' in row_str:
+        if 'tên hàng' in row_str or 'ten hang' in row_str or 'description' in row_str or 'ecus name' in row_str:
             matches += 1
-        if 'số lượng' in row_str or 'quantity' in row_str or 'q\'ty' in row_str:
+        if 'số lượng' in row_str or 'so luong' in row_str or 'quantity' in row_str or 'q\'ty' in row_str:
             matches += 1
             
         if matches > max_matches:
