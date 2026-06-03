@@ -110,10 +110,11 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
             "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
             "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
-            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
+                        "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
             "uom": {"label": "ĐVT", "keywords": ["đvt"], "type": "string"},
             "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá"], "type": "number"},
             "itemValue": {"label": "Trị giá", "keywords": ["trị giá mặt hàng"], "type": "number"},
+            "itemTax": {"label": "Thuế mặt hàng", "keywords": ["thuế mặt hàng", "thuế nhập khẩu", "thuế xuất khẩu"], "type": "number"},
         },
     },
     "customs_declaration_import": {
@@ -188,10 +189,11 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
             "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
             "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
-            "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
+                        "quantity": {"label": "Lượng (Quantity)", "keywords": ["lượng"], "type": "number"},
             "uom": {"label": "ĐVT", "keywords": ["đvt"], "type": "string"},
             "unitPrice": {"label": "Đơn giá", "keywords": ["đơn giá"], "type": "number"},
             "itemValue": {"label": "Trị giá", "keywords": ["trị giá mặt hàng"], "type": "number"},
+            "itemTax": {"label": "Thuế mặt hàng", "keywords": ["thuế mặt hàng", "thuế nhập khẩu", "thuế xuất khẩu"], "type": "number"},
         },
     },
     "booking": {
@@ -2955,7 +2957,7 @@ QUY TẮC QUAN TRỌNG:
 3. Nếu hoàn toàn không thấy dữ liệu cho một trường, trả về null.
 4. Container number format: 4 chữ + 7 số (VD: HDMU1234567). Nếu có nhiều, phân cách bằng dấu phẩy.
 5. HS Code: loại bỏ dấu chấm, trả về dạng liền (VD: "8473.30.90" → "84733090").
-6. Tờ khai Hải quan thường có danh sách nhiều mặt hàng. ĐỐI VỚI CÁC TRƯỜNG THUỘC VỀ DANH SÁCH MẶT HÀNG (hsCode, description, origin, quantity, uom, unitPrice, itemValue): Hãy trả về dưới dạng mảng (array) các object (ví dụ: "items": [ {{"hsCode": "...", "description": "..."}}, {{"hsCode": "...", ...}} ]). Các trường chung khác vẫn nằm ở root JSON.
+6. Tờ khai Hải quan thường có danh sách nhiều mặt hàng (dài qua nhiều trang). BẮT BUỘC PHẢI LẤY TẤT CẢ CÁC MẶT HÀNG KHÔNG ĐƯỢC BỎ SÓT. ĐỐI VỚI CÁC TRƯỜNG THUỘC VỀ DANH SÁCH MẶT HÀNG (hsCode, description, origin, quantity, uom, unitPrice, itemValue, itemTax): Hãy trả về dưới dạng mảng (array) các object (ví dụ: "items": [ {{"hsCode": "...", "description": "..."}}, {{"hsCode": "...", ...}} ]). Các trường chung khác vẫn nằm ở root JSON.
 7. Nếu shipper/consignee có địa chỉ nhiều dòng, cố gắng phân tách Tên và Địa chỉ vào đúng trường tương ứng.
 8. Incoterm chỉ trả về mã viết tắt: FOB, CIF, EXW, FCA, CPT, CIP, DAP, DPU, DDP, FAS, CFR, DAT.
 9. Payment method: T/T, L/C, D/P, D/A, CASH, O/A, etc.
@@ -2966,7 +2968,7 @@ VÍ DỤ OUTPUT:
 {{"invoiceNo": "INV-2024-001", "date": "2024-01-15", "totalAmount": 50000.00, "currency": "USD", "items": [{{"description": "LAPTOP", "quantity": 10}}]}}
 
 --- BẮT ĐẦU VĂN BẢN CHỨNG TỪ ---
-{raw_text[:20000]}
+{raw_text[:100000]}
 --- KẾT THÚC VĂN BẢN CHỨNG TỪ ---
 """
     try:
@@ -2984,7 +2986,7 @@ VÍ DỤ OUTPUT:
         
         ai_results: dict[str, dict[str, Any]] = {}
         
-        item_fields = ["hsCode", "description", "origin", "quantity", "uom", "unitPrice", "itemValue"]
+        item_fields = ["hsCode", "description", "origin", "quantity", "uom", "unitPrice", "itemValue", "itemTax"]
         
         for field_key, field_def in fields_def.items():
             if field_key in item_fields:
@@ -3069,7 +3071,7 @@ VÍ DỤ OUTPUT:
 {{"invoiceNo": "INV-2024-001", "date": "2024-01-15", "totalAmount": 50000.00, "currency": "USD", "seller": "ABC COMPANY", "buyer": "XYZ CORPORATION", "incoterm": "FOB"}}
 
 --- BẮT ĐẦU VĂN BẢN CHỨNG TỪ ---
-{raw_text[:20000]}
+{raw_text[:100000]}
 --- KẾT THÚC VĂN BẢN CHỨNG TỪ ---
 """
     try:

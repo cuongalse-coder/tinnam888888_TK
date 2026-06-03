@@ -679,7 +679,7 @@ def _render_multi_comparison(multi_result, docs):
         },
         "Danh sách hàng": {
             "Chi tiết mặt hàng": [
-                "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Xuất xứ", "Lượng (Quantity)", "ĐVT", "Đơn giá", "Trị giá"
+                "Mã số hàng hóa (HS)", "Mô tả hàng hóa", "Xuất xứ", "Lượng (Quantity)", "ĐVT", "Đơn giá", "Trị giá", "Thuế mặt hàng"
             ]
         }
     }
