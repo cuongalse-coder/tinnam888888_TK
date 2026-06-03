@@ -751,6 +751,7 @@ def _render_multi_comparison(multi_result, docs):
             html += "</div>"
             
         html += "</div></div>"
+        html = "\n".join(line.strip() for line in html.split("\n"))
         return html
 
     def generate_item_cards_html(keywords, tab_df):
@@ -807,6 +808,7 @@ def _render_multi_comparison(multi_result, docs):
                     
                 html += "</div>"
             html += "</div></div>"
+        html = "\n".join(line.strip() for line in html.split("\n"))
         return html
 
     tabs = st.tabs(list(TAB_GROUPS.keys()))
