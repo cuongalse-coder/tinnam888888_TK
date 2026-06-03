@@ -80,7 +80,7 @@ def parse_excel_fields_directly(file) -> Dict[str, Any]:
                 file.seek(0)
                 try:
                     dfs = pd.read_html(file)
-                    df = dfs[0] if dfs else pd.DataFrame()
+                    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
                 except Exception:
                     file.seek(0)
                     try:

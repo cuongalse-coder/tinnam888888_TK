@@ -107,6 +107,7 @@ DOCUMENT_TYPES: dict[str, dict[str, Any]] = {
             "lcNo": {"label": "Số L/C", "keywords": ["số l/c"], "type": "string"},
             "freightAmount": {"label": "Phí vận chuyển", "keywords": ["phí vận chuyển"], "type": "number"},
             "insuranceAmount": {"label": "Phí bảo hiểm", "keywords": ["phí bảo hiểm"], "type": "number"},
+            "itemCode": {"label": "Mã hàng", "keywords": ["mã hàng", "item code", "part no"], "type": "string"},
             "hsCode": {"label": "Mã số hàng hóa (HS)", "keywords": ["mã hs"], "type": "string"},
             "description": {"label": "Mô tả hàng hóa", "keywords": ["mô tả"], "type": "string"},
             "origin": {"label": "Xuất xứ", "keywords": ["xuất xứ"], "type": "string"},
